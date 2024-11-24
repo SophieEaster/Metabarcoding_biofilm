@@ -1,0 +1,149 @@
+---
+title: "Metabarcoding_biofilm"
+format: 
+  html:
+    self-contained: true
+    toc: true
+    style: "floating"
+---
+
+# xxx Title of the paper xxx
+
+xxx Authors
+
+R script written by Sophie Oster\
+checked by xxx
+
+\
+RPTU Kaiserslautern-Landau\
+Fortstrasse 7\
+76829 Landau in der Pfalz\
+GERMANY
+
+This study was conducted with four treatments and three time points explanatory variables depending on the endpoint:
+
+-   treatment (categorical)
+
+    -   uncontaminated control (negative control, NC)
+
+    -   herbicide propyzamide (Pro)
+
+    -   antibiotic ciprofloxacin (Cip)
+
+    -   mixture of propyzamide and ciprofloxacin (Mix)
+
+
+# 1 Packages in a reproducible environment
+```{r}
+# renv::init() 
+# renv::snapshot()
+
+library(stats)
+library(rstatix)
+library(dplyr)
+library(tidyverse)
+library(tidyr)
+library(broom)
+library(dunn.test)
+library(patchwork)
+library(vegan)
+library(data.table)
+library(ggplot2)
+library(ggrepel)
+library(ggforce)
+library(concaveman)
+library(gridExtra)
+library(stringr)
+library(shades)
+library(ggpubr)
+library(base)
+library(ggokabeito)
+library(multcomp)
+library(car)
+library(asbio)
+library(plotrix)
+library(lmtest)
+library(boot)
+library(moments)
+library(lme4)
+library(DAAG)
+library(performance)
+library(emmeans)
+library(purrr)
+library(DT)
+#library(pairwiseAdonis)
+library(openxlsx)
+```
+
+# 2 Set working directory
+```{r}
+prj <- getwd()
+setwd(prj)
+```
+
+# Prokaryotes
+
+Load data
+```{r}
+ASV_prokaryotes <-
+  read.table(file.path(prj, "data\\ASV_prokaryotes.txt"),
+             header = FALSE, sep = "\t")
+
+View(ASV_prokaryotes)
+```
+
+## Data transformation
+
+```{r}
+# Transpose data frame
+ASV_prokaryotes <- as.data.frame(t(ASV_prokaryotes))
+
+# Move first row to column names
+ASV_prokaryotes <- ASV_prokaryotes %>%
+  slice(-1) %>%  # Remove the first row
+  setNames(as.character(ASV_prokaryotes[1, ]))  # Set first row as column names
+
+# Rename first column from asv to sample
+colnames(ASV_prokaryotes)[1] <- "sample"
+
+# Add more sample information
+prokaryotes_sample_info <-
+  read.table(file.path(prj, "data\\prokaryotes_sample_info.txt"),
+             header = TRUE, sep = "\t")
+
+# Combine with main table
+ASV_prokaryotes <- prokaryotes_sample_info %>%
+  left_join(ASV_prokaryotes, by = "sample")
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Eukaryotes
+
+Load data
+```{r}
+ASV_eukaryotes <- 
+  read.xlsx(file.path(prj, "data", "ASV_eukaryotes.xlsx"),
+            colNames = TRUE, rowNames = TRUE)
+
+View(ASV_eukaryotes)
+colnames(ASV_eukaryotes)
+
+```
+
