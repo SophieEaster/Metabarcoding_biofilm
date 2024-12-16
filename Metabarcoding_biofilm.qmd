@@ -27,16 +27,52 @@ This study was conducted with four treatments and three time points explanatory 
     -   uncontaminated control (negative control, NC)
 
     -   herbicide propyzamide (Pro)
+    
+    -   herbicide diuron (Diu)
 
     -   antibiotic ciprofloxacin (Cip)
 
-    -   mixture of propyzamide and ciprofloxacin (Mix)
 
-
-# 1 Packages in a reproducible environment
+# 1 R version 4.3.2
+R version used for this script: 4.3.2, use the following code chunk to download the correct version.
 ```{r}
-# renv::init() 
-# renv::snapshot()
+# Check the current R version
+current_r_version <- as.character(getRversion())
+
+# Specify the required R version
+required_r_version <- "4.3.2"
+
+if (current_r_version != required_r_version) {
+  # Install 'rig' if not already installed
+  if (!requireNamespace("rig", quietly = TRUE)) {
+    install.packages("rig")
+  }
+  
+  # Load the 'rig' package
+  library(rig)
+  
+  # Check if the required R version is installed
+  installed_versions <- rig::rig_ls()
+  if (!(required_r_version %in% installed_versions$version)) {
+    # Install the required R version using 'rig'
+    rig::rig_add(required_r_version)
+  }
+  
+  # Set the required R version as default
+  rig::rig_default(required_r_version)
+  
+  # Notify the user about the version change
+  stop(paste("Please restart R using version", required_r_version, "and rerun the script."))
+} else {
+  message("You are already using the correct R version:", required_r_version)
+}
+```
+
+
+# 2 Packages in a reproducible environment
+```{r}
+# Restore the environment:
+# renv::restore()
 
 library(stats)
 library(rstatix)
@@ -71,25 +107,119 @@ library(performance)
 library(emmeans)
 library(purrr)
 library(DT)
-#library(pairwiseAdonis)
 library(openxlsx)
+
+# renv::init() 
+# renv::snapshot()
 ```
 
-# 2 Set working directory
+# 3 Set working directory
 ```{r}
 prj <- getwd()
 setwd(prj)
 ```
 
-# Prokaryotes
+# 4 Prokaryotes
 
 Load data
 ```{r}
 ASV_prokaryotes <-
   read.table(file.path(prj, "data\\ASV_prokaryotes.txt"),
-             header = FALSE, sep = "\t")
+             header = TRUE, sep = "\t")
 
-View(ASV_prokaryotes)
+# Extract ASV with too less findings
+rows_to_keep <-
+ASV_prokaryotes %>% 
+  dplyr::select_if(is.numeric) %>%
+  rowSums() > 5
+
+ASV_prokaryotes[rows_to_keep, ]
+
+# Count the number of TRUE values in rows_to_keep
+num_rows_extracted <- sum(rows_to_keep)
+
+# Print the result
+print(num_rows_extracted)
+
+# Add rows to keep in new dataframe
+ASV_prokaryotes_filtered <- ASV_prokaryotes %>%
+  dplyr::filter(rows_to_keep)
+
+View(ASV_prokaryotes_filtered)
+
+
+# Taxonomy
+tax_ranks <- c("kingdom", "phylum", "class", "order", "family", "genus", "species")
+
+# Add taxonomny in columns
+ASV_prokaryotes_filtered %<>%
+  # dplyr::select(taxonomy_prokaryotes) %>%
+  separate(
+    taxonomy_prokaryotes,
+    into = tax_ranks,
+    sep = ","
+  ) %>%
+  dplyr::mutate(
+    dplyr::across(
+      dplyr::any_of(tax_ranks),
+      ~stringr::str_remove(.x, ".*:")
+    )
+  ) %>%
+  tidyr::pivot_longer(
+    cols = dplyr::starts_with("P", ignore.case = FALSE),
+    values_to = "reads",
+    names_to = "sample"
+  )
+
+
+# Add more sample information
+prokaryotes_sample_info <-
+  read.table(file.path(prj, "data\\prokaryotes_sample_info.txt"),
+             header = TRUE, sep = "\t")
+
+# Combine with main table
+ASV_prokaryotes_filtered <- prokaryotes_sample_info %>%
+  left_join(ASV_prokaryotes_filtered, by = "sample")
+
+# Extract pristine site (chemical column)
+pristine_prokaryotes <- ASV_prokaryotes_filtered %>%
+  dplyr::filter(chemical == "pristine")
+
+ASV_prokaryotes_filtered <- ASV_prokaryotes_filtered %>%
+  filter(chemical != "pristine")
+
+View(pristine_prokaryotes)
+
+ 
+
+
+#ASV_prokaryotes %>%
+#  dplyr::summarise(
+#    dplyr::across(
+#      dplyr::any_of(tax_ranks),
+#      ~sum(is.na(.x)) / length(.x) 
+ #   )
+ # )
+
+
+# dann relative abundance pro probe berechnen 
+# ASV_prokaryotes %>%
+  # dplyr::group_by(sample) %>%
+  # dplyr::mutate(RA = reads / sum(reads))
+# dissimilarity to control bei cipro dosis wirkung
+# und Permanova 
+# nicht reads nehmen sondern relative abundance 
+
+# Exclude taxonomy info
+taxonomy_prokaryotes <- ASV_prokaryotes[, ncol(ASV_prokaryotes), drop = FALSE]
+
+# Move first row to column name
+taxonomy_prokaryotes <- taxonomy_prokaryotes %>%
+  slice(-1) %>%  
+  setNames(as.character(taxonomy_prokaryotes[1, ])) 
+
+# Remove taxonomy column from original dataframe
+ASV_prokaryotes <- ASV_prokaryotes[, -ncol(ASV_prokaryotes)]
 ```
 
 ## Data transformation
@@ -106,16 +236,201 @@ ASV_prokaryotes <- ASV_prokaryotes %>%
 # Rename first column from asv to sample
 colnames(ASV_prokaryotes)[1] <- "sample"
 
-# Add more sample information
-prokaryotes_sample_info <-
-  read.table(file.path(prj, "data\\prokaryotes_sample_info.txt"),
-             header = TRUE, sep = "\t")
 
-# Combine with main table
-ASV_prokaryotes <- prokaryotes_sample_info %>%
-  left_join(ASV_prokaryotes, by = "sample")
+```
+
+## Effects within each experiment?
+## NMDS experiment 1:
+```{r}
+pro_exp1 <- ASV_prokaryotes %>%
+  filter(!(exp %in% c(2, 3, 4))) 
+
+# pristine rauswerfen
+pro_exp1 <- pro_exp1 %>%
+  filter(!(chemical %in% c("pristine")))
+
+# hier jetzt viele ASVs mit überall 0 - Werten --> rauswerfen dann für einzelne Versuche?
+pro_exp1_filtered <- pro_exp1[, colSums(pro_exp1 != 0) > 0]
+# von 13796 ASVs auf 1782 reduziert
+
+# calculate relative abundance
+# first change character to numeric:
+pro_exp1_filtered <- pro_exp1_filtered %>%
+  mutate(across(starts_with("ASV"), as.numeric))
 
 
+pro_exp1_filtered <- pro_exp1_filtered %>%
+  rowwise() %>%
+  mutate(
+    total_abundance = sum(c_across(starts_with("ASV"))),  # Calculate total abundance per sample
+    across(starts_with("ASV"), ~ .x / total_abundance, .names = "rel_{col}") # Calculate relative abundance
+  ) %>%
+  ungroup()
+
+# delete AVS columns and keep relative abundances:
+pro_exp1_filtered <- pro_exp1_filtered %>%
+  dplyr::select(-starts_with("ASV"))
+
+# delete first 7 columns for metaMDS
+pro_exp1_filtered <- pro_exp1_filtered[, -c(1, 2, 3, 4, 5, 6, 7)]
+
+# The Hellinger transformation reduces the impact of large abundances while emphasizing relative differences.
+
+# metaMDS
+NMDS_pro_exp1 <-
+  metaMDS(
+    pro_exp1_filtered,
+    autotransform = FALSE,
+    k = 2 ,
+    distance = "bray",
+    na.rm = TRUE
+  )
+
+NMDS_pro_exp1$stress
+
+# exctract NMDS scores
+nmds_scores_exp1 <- as.data.frame(scores(NMDS_pro_exp1, display = "sites"))
+
+# delete pristine from prokaryotes_sample_info
+prokaryotes_sample_info <- prokaryotes_sample_info %>%
+  filter(!(chemical %in% c("pristine")))
+
+# add treatment column to NMDS scores
+Day            <- prokaryotes_sample_info $ day[prokaryotes_sample_info $ exp == "1"]
+Treatments     <- prokaryotes_sample_info $ chemical[prokaryotes_sample_info $ exp == "1"]
+Concentration  <- prokaryotes_sample_info $ concentration_ug_L[prokaryotes_sample_info $ exp == "1"]
+
+nmds_scores_exp1 $ Treatment = Treatments
+nmds_scores_exp1 $ Day = Day
+nmds_scores_exp1 $ Concentration = Concentration
+
+
+# For the plot: reorder treatment variable in data.scores_snail_absolute
+nmds_scores_exp1 $ Treatment <- factor(
+  nmds_scores_exp1 $ Treatment,
+  levels = c("control", "ciprofloxacin", "diuron", "pristine")
+)
+
+
+NMDS_pro_exp1_plot <- ggplot(data = nmds_scores_exp1, aes(x = NMDS1, y = NMDS2)) +
+  geom_point(
+        aes(shape = Treatment, color = Treatment),
+    size = 5,
+    alpha = 1,
+    show.legend = TRUE
+  )
+
+NMDS_pro_exp1_plot
+```
+
+## NMDS experiment 2:
+```{r}
+pro_exp2 <- ASV_prokaryotes %>%
+  filter(!(exp %in% c(1, 3, 4))) 
+
+pro_exp2 <- pro_exp2[, -c(1, 2, 3, 4, 5, 6)]
+
+# numeric values
+pro_exp2 <- pro_exp2 %>%
+  mutate(across(everything(), as.numeric))
+
+NMDS_pro_exp2 <-
+  metaMDS(
+    pro_exp2,
+    autotransform = FALSE,
+    k = 2 ,
+    distance = "bray",
+    na.rm = TRUE
+  )
+
+NMDS_pro_exp2$stress
+
+# exctract NMDS scores
+nmds_scores_exp2 <- as.data.frame(scores(NMDS_pro_exp2, display = "sites"))
+
+# add treatment column to NMDS scores
+Day        <- prokaryotes_sample_info $ day[prokaryotes_sample_info $ exp == "2"]
+Treatments <- prokaryotes_sample_info $ chemical[prokaryotes_sample_info $ exp == "2"]
+Concentration <- prokaryotes_sample_info $ concentration_ug_L[prokaryotes_sample_info $ exp == "2"]
+
+nmds_scores_exp2 $ Treatment = Treatments
+nmds_scores_exp2 $ Day = Day
+nmds_scores_exp2 $ Concentration = Concentration
+
+
+# For the plot: reorder treatment variable in data.scores_snail_absolute
+nmds_scores_exp2 $ Treatment <- factor(
+  nmds_scores_exp2 $ Treatment,
+  levels = c("control", "diuron", "pristine", "propyzamide")
+)
+
+
+NMDS_pro_exp2_plot <- ggplot(data = subset(nmds_scores_exp2, Treatment != "pristine"), 
+                             aes(x = NMDS1, y = NMDS2)) +
+  geom_point(
+    aes(shape = Treatment, color = Treatment),
+    size = 5,
+    alpha = 1,
+    show.legend = TRUE
+  )
+
+
+NMDS_pro_exp2_plot
+```
+
+## NMDS experiment 3:
+```{r}
+pro_exp3 <- ASV_prokaryotes %>%
+  filter(!(exp %in% c(1, 2, 4))) 
+
+pro_exp3 <- pro_exp3[, -c(1, 2, 3, 4, 5, 6)]
+
+# numeric values
+pro_exp3 <- pro_exp3 %>%
+  mutate(across(everything(), as.numeric))
+
+NMDS_pro_exp3 <-
+  metaMDS(
+    pro_exp3,
+    autotransform = FALSE,
+    k = 2 ,
+    distance = "bray",
+    na.rm = TRUE
+  )
+
+NMDS_pro_exp3$stress
+
+# exctract NMDS scores
+nmds_scores_exp3 <- as.data.frame(scores(NMDS_pro_exp3, display = "sites"))
+
+# add treatment column to NMDS scores
+Day        <- prokaryotes_sample_info $ day[prokaryotes_sample_info $ exp == "3"]
+Treatments <- prokaryotes_sample_info $ chemical[prokaryotes_sample_info $ exp == "3"]
+Concentration <- prokaryotes_sample_info $ concentration_ug_L[prokaryotes_sample_info $ exp == "3"]
+
+nmds_scores_exp3 $ Treatment = Treatments
+nmds_scores_exp3 $ Day = Day
+nmds_scores_exp3 $ Concentration = Concentration
+
+
+# For the plot: reorder treatment variable in data.scores_snail_absolute
+nmds_scores_exp3 $ Treatment <- factor(
+  nmds_scores_exp3 $ Treatment,
+  levels = c("control", "diuron", "pristine", "propyzamide")
+)
+
+
+NMDS_pro_exp3_plot <- ggplot(data = subset(nmds_scores_exp3, Treatment != "pristine"), 
+                             aes(x = NMDS1, y = NMDS2)) +
+  geom_point(
+    aes(shape = Treatment, color = Treatment),
+    size = 5,
+    alpha = 1,
+    show.legend = TRUE
+  )
+
+
+NMDS_pro_exp3_plot
 ```
 
 
@@ -131,10 +446,7 @@ ASV_prokaryotes <- prokaryotes_sample_info %>%
 
 
 
-
-
-
-# Eukaryotes
+# 5 Eukaryotes
 
 Load data
 ```{r}
