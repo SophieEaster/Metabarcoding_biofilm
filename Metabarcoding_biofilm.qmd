@@ -5,6 +5,8 @@ format:
     self-contained: true
     toc: true
     style: "floating"
+editor_options: 
+  chunk_output_type: console
 ---
 
 # xxx Title of the paper xxx
@@ -36,125 +38,126 @@ This study was conducted with four treatments and three time points explanatory 
 # 1 R version 4.3.2
 R version used for this script: 4.3.2, use the following code chunk to download the correct version.
 ```{r}
-# Check the current R version
-current_r_version <- as.character(getRversion())
-
-# Specify the required R version
-required_r_version <- "4.3.2"
-
-if (current_r_version != required_r_version) {
-  # Install 'rig' if not already installed
-  if (!requireNamespace("rig", quietly = TRUE)) {
-    install.packages("rig")
-  }
-  
-  # Load the 'rig' package
-  library(rig)
-  
-  # Check if the required R version is installed
-  installed_versions <- rig::rig_ls()
-  if (!(required_r_version %in% installed_versions$version)) {
-    # Install the required R version using 'rig'
-    rig::rig_add(required_r_version)
-  }
-  
-  # Set the required R version as default
-  rig::rig_default(required_r_version)
-  
-  # Notify the user about the version change
-  stop(paste("Please restart R using version", required_r_version, "and rerun the script."))
-} else {
-  message("You are already using the correct R version:", required_r_version)
-}
+# # Check the current R version
+# current_r_version <- as.character(getRversion())
+# 
+# # Specify the required R version
+# required_r_version <- "4.3.2"
+# 
+# if (current_r_version != required_r_version) {
+#   # Install 'rig' if not already installed
+#   if (!requireNamespace("rig", quietly = TRUE)) {
+#     install.packages("rig")
+#   }
+#   
+#   # Load the 'rig' package
+#   library(rig)
+#   
+#   # Check if the required R version is installed
+#   installed_versions <- rig::rig_ls()
+#   if (!(required_r_version %in% installed_versions$version)) {
+#     # Install the required R version using 'rig'
+#     rig::rig_add(required_r_version)
+#   }
+#   
+#   # Set the required R version as default
+#   rig::rig_default(required_r_version)
+#   
+#   # Notify the user about the version change
+#   stop(paste("Please restart R using version", required_r_version, "and rerun the script."))
+# } else {
+#   message("You are already using the correct R version:", required_r_version)
+# }
 ```
 
 
 # 2 Packages in a reproducible environment
 ```{r}
+#| message: false
+#| warning: false
 # Restore the environment:
 # renv::restore()
 
-library(stats)
-library(rstatix)
-library(dplyr)
-library(tidyverse)
-library(tidyr)
-library(broom)
-library(dunn.test)
-library(patchwork)
-library(vegan)
-library(data.table)
-library(ggplot2)
-library(ggrepel)
-library(ggforce)
-library(concaveman)
-library(gridExtra)
-library(stringr)
-library(shades)
-library(ggpubr)
-library(base)
-library(ggokabeito)
-library(multcomp)
-library(car)
-library(asbio)
-library(plotrix)
-library(lmtest)
-library(boot)
-library(moments)
-library(lme4)
-library(DAAG)
-library(performance)
-library(emmeans)
-library(purrr)
-library(DT)
-library(openxlsx)
+library("stats")
+library("rstatix")
+library("dplyr")
+library("tidyverse")
+library("tidyr")
+library("broom")
+library("dunn.test")
+library("patchwork")
+library("vegan")
+library("data.table")
+library("ggplot2")
+library("ggrepel")
+library("ggforce")
+library("concaveman")
+library("gridExtra")
+library("stringr")
+library("shades")
+library("ggpubr")
+library("ggokabeito")
+library("multcomp")
+library("car")
+library("asbio")
+library("plotrix")
+library("lmtest")
+library("boot")
+library("moments")
+library("lme4")
+library("DAAG")
+library("performance")
+library("emmeans")
+library("purrr")
+library("DT")
+library("openxlsx")
 
 # renv::init() 
 # renv::snapshot()
 ```
 
-# 3 Set working directory
-```{r}
-prj <- getwd()
-setwd(prj)
-```
-
-# 4 Prokaryotes
+# 3 Prokaryotes
 
 Load data
 ```{r}
-ASV_prokaryotes <-
-  read.table(file.path(prj, "data\\ASV_prokaryotes.txt"),
-             header = TRUE, sep = "\t")
+prokaryotes <-
+  read.table("data/ASV_prokaryotes.txt",
+             header = TRUE, sep = "\t") %>%
+  tibble::tibble()
+
+field_communities <- paste0("P", c(13, 21, 36))
+
+prokaryotes_field <- prokaryotes %>% 
+  dplyr::select(
+    dplyr::any_of(
+      c("asv", field_communities, "taxonomy_prokaryotes")
+      )
+    )
+
+prokaryotes <- prokaryotes %>% 
+  dplyr::select(!dplyr::any_of(field_communities)) %>%
+  dplyr::arrange(asv)
 
 # Extract ASV with too less findings
 rows_to_keep <-
-ASV_prokaryotes %>% 
+prokaryotes %>% 
   dplyr::select_if(is.numeric) %>%
   rowSums() > 5
 
-ASV_prokaryotes[rows_to_keep, ]
 
-# Count the number of TRUE values in rows_to_keep
-num_rows_extracted <- sum(rows_to_keep)
+# Percentage removed by omitting row sums smaller or equal to 5
+paste(round(100 * (1 - sum(rows_to_keep) / nrow(prokaryotes)), 2), "%")
 
-# Print the result
-print(num_rows_extracted)
-
-# Add rows to keep in new dataframe
-ASV_prokaryotes_filtered <- ASV_prokaryotes %>%
-  dplyr::filter(rows_to_keep)
-
-View(ASV_prokaryotes_filtered)
-
+prokaryotes <- prokaryotes[rows_to_keep, ]
 
 # Taxonomy
 tax_ranks <- c("kingdom", "phylum", "class", "order", "family", "genus", "species")
 
 # Add taxonomny in columns
-ASV_prokaryotes_filtered %<>%
+prokaryotes_long <-
+  prokaryotes %>%
   # dplyr::select(taxonomy_prokaryotes) %>%
-  separate(
+  tidyr::separate(
     taxonomy_prokaryotes,
     into = tax_ranks,
     sep = ","
@@ -174,76 +177,432 @@ ASV_prokaryotes_filtered %<>%
 
 # Add more sample information
 prokaryotes_sample_info <-
-  read.table(file.path(prj, "data\\prokaryotes_sample_info.txt"),
+  read.table("data/prokaryotes_sample_info.txt",
              header = TRUE, sep = "\t")
 
 # Combine with main table
-ASV_prokaryotes_filtered <- prokaryotes_sample_info %>%
-  left_join(ASV_prokaryotes_filtered, by = "sample")
+prokaryotes_long <- prokaryotes_long %>%
+  left_join(prokaryotes_sample_info, by = "sample")
 
-# Extract pristine site (chemical column)
-pristine_prokaryotes <- ASV_prokaryotes_filtered %>%
-  dplyr::filter(chemical == "pristine")
-
-ASV_prokaryotes_filtered <- ASV_prokaryotes_filtered %>%
-  filter(chemical != "pristine")
-
-View(pristine_prokaryotes)
-
- 
-
-
-#ASV_prokaryotes %>%
-#  dplyr::summarise(
-#    dplyr::across(
-#      dplyr::any_of(tax_ranks),
-#      ~sum(is.na(.x)) / length(.x) 
- #   )
- # )
-
+prokaryotes_long %>%
+ dplyr::summarise(
+   dplyr::across(
+     dplyr::any_of(tax_ranks),
+     ~sum(is.na(.x)) / length(.x)
+  )
+)
 
 # dann relative abundance pro probe berechnen 
-# ASV_prokaryotes %>%
-  # dplyr::group_by(sample) %>%
-  # dplyr::mutate(RA = reads / sum(reads))
-# dissimilarity to control bei cipro dosis wirkung
-# und Permanova 
-# nicht reads nehmen sondern relative abundance 
-
-# Exclude taxonomy info
-taxonomy_prokaryotes <- ASV_prokaryotes[, ncol(ASV_prokaryotes), drop = FALSE]
-
-# Move first row to column name
-taxonomy_prokaryotes <- taxonomy_prokaryotes %>%
-  slice(-1) %>%  
-  setNames(as.character(taxonomy_prokaryotes[1, ])) 
-
-# Remove taxonomy column from original dataframe
-ASV_prokaryotes <- ASV_prokaryotes[, -ncol(ASV_prokaryotes)]
+prokaryotes_long <-
+  prokaryotes_long %>%
+  dplyr::mutate(
+    RA = reads / sum(reads),
+    .after = reads,
+    .by = sample
+    )
 ```
 
-## Data transformation
+```{r}
+wcmd_and_adonis <- function(df, distance = "bray", exponent = 0.5) {
+  asvs_to_remove <-
+    df %>%
+    dplyr::group_by(asv) %>%
+    dplyr::summarise(
+      total_reads = sum(reads)
+    ) %>% 
+    dplyr::filter(total_reads <= 5) %>%
+    dplyr::pull(asv)
+  
+  df_wide <- 
+    df %>%
+    dplyr::filter(
+      !asv %in% asvs_to_remove
+    ) %>%
+    dplyr::mutate(
+      present = as.numeric(reads > 0)
+    ) %>%
+    dplyr::select(dplyr::any_of(c("asv", "sample", "exp", "day", "RA", "media", "chemical", "concentration_ug_L"))) %>%
+    tidyr::pivot_wider(
+      values_from = RA,
+      names_from = asv
+    ) %>%
+    dplyr::arrange(concentration_ug_L)
+  
+  species <-
+  df_wide %>%
+  dplyr::select(!dplyr::any_of(c("sample", "exp", "media", "chemical", "concentration_ug_L", "day")))
+
+  env <-
+    df_wide %>%
+    dplyr::select(dplyr::any_of(c("sample", "exp", "media", "chemical", "concentration_ug_L", "day")))
+  
+  wcmd <- 
+  vegan::wcmdscale(
+    vegdist(species),
+    k = 2
+  )
+  
+  colnames(wcmd) <- c("WCMD1", "WCMD2")
+  
+  remove_diuron <- env$chemical != "diuron"
+  
+  permanova <-
+  adonis2(
+    species[remove_diuron,]^exponent ~ concentration_ug_L,
+    data = env[remove_diuron,],
+    method = distance,
+    by = "terms",
+    permutations = 9999
+  )
+  
+  list(
+    adonis = permanova,
+    wcmd = wcmd %>%
+    dplyr::bind_cols(env)
+  )
+}
+
+prok_analyzed <- 
+prokaryotes_long %>%
+  dplyr::group_by(exp, day) %>%
+  tidyr::nest() %>%
+  dplyr::mutate(
+    obj = purrr::map(
+      data, ~wcmd_and_adonis(.x)
+    ),
+    wcmd = purrr::map(
+      obj, ~.x$wcmd
+    ),
+    permanova = purrr::map_dbl(
+      obj, ~.x$adonis %>% as.data.frame %>% dplyr::slice(1) %>% dplyr::pull(5)
+    )
+  ) %>%
+  tidyr::unnest(wcmd)
+
+prok_analyzed <- 
+  prok_analyzed %>%
+  dplyr::filter(day == 14)
+
+prok_analyzed_sign <- 
+prok_analyzed %>%
+  dplyr::group_by(day, exp, media) %>%
+  dplyr::reframe(
+    sign = unique(permanova)
+  ) %>%
+    dplyr::mutate(
+    season = ifelse(exp %in% c(1, 4), "Winter", "Summer")
+  )
+
+conc_fac <- levels(factor(prok_analyzed$concentration_ug_L))
+colors <- 
+  scico::scico(length(conc_fac), end = 0.8, palette = "batlow") %>%
+  colorspace::lighten(0.2)
+names(colors) <- levels(factor(prok_analyzed$concentration_ug_L))
+
+prok_nmds <-
+prok_analyzed %>%
+  dplyr::mutate(
+    connect = ifelse(chemical %in% c("control", "diuron"), 1, NA),
+    season = ifelse(exp %in% c(1, 4), "Winter", "Summer")
+  ) %>%
+  ggplot(aes(WCMD1, WCMD2)) +
+  geom_vline(xintercept = 0, linetype = 2, linewidth = 0.2, color = "#aaaaaa") +
+  geom_hline(yintercept = 0, linetype = 2, linewidth = 0.2, color = "#aaaaaa") +
+  geom_line(
+    data = . %>% tidyr::drop_na(connect),
+    aes(group = connect),
+    linetype = 2, linewidth = 0.4,
+    color = "#333333"
+  ) +
+  geom_point(
+    aes(
+      shape = stringr::str_to_title(chemical),
+      fill = factor(concentration_ug_L)
+      ),
+    size = 2
+  ) +
+  geom_label(
+    data = prok_analyzed_sign,
+    aes(label = paste("p = ", round(sign, 3)), x = 0.75, y = -0.3),
+    size = 6 / ggplot2:::.pt,
+    fill = "#ffffff88",
+    label.size = 0,
+    hjust = 1,
+    vjust = 0
+  ) +
+  scale_shape_manual(values = c(21, 22, 24, 25)) +
+  scale_fill_manual(values = colors) +
+  guides(
+    fill = 
+      guide_legend(
+        ncol = 4,
+        override.aes = list(shape = 21)
+        ),
+    shape = 
+      guide_legend(
+        ncol = 2
+        )
+    ) +
+  ggh4x::facet_nested_wrap(
+    ~season + stringr::str_to_title(media), 
+    ncol = 1,
+    strip.position = "right"
+    ) +
+  labs(
+    y = NULL,
+    fill = "Concentration (µg/L)",
+    shape = "Chemical"
+  ) +
+  theme_bw() +
+  theme(
+    text = element_text(size = 8),
+    panel.grid.major = element_line(linewidth = 0.1, color = "#cccccc"),
+    panel.grid.minor = element_line(linewidth = 0.05, color = "#cccccc"),
+    strip.background.y = ggh4x::element_part_rect(side = "l", fill = NA),
+    strip.text.y = element_text(size = 6, face = "bold"),
+    legend.position = "bottom",
+    legend.title.position = "top",
+    legend.key.spacing.x = unit(0, "mm"),
+    legend.key.spacing.y = unit(0, "mm"),
+    legend.key.size = unit(4, "mm")
+  )
+
+ggsave(
+  "output/prokaryotes.png",
+  prok_nmds,
+  width = 16.5,
+  height = 5,
+  units = "cm",
+  dpi = 600
+)
+```
 
 ```{r}
-# Transpose data frame
-ASV_prokaryotes <- as.data.frame(t(ASV_prokaryotes))
+simper_summary <- function(
+    df,
+    resp = "RA",
+    exponent = 0.5,
+    tax_level = "phylum",
+    n_taxa = 5
+) {
+  asvs_to_remove <-
+  df %>%
+    dplyr::filter(chemical != "diuron") %>%
+    dplyr::group_by(asv) %>%
+    dplyr::summarise(
+      total_reads = sum(reads)
+    ) %>% 
+    dplyr::filter(total_reads <= 5) %>%
+    dplyr::pull(asv)
+  
+  simper_df <-
+    df %>%
+    dplyr::filter(chemical != "diuron") %>%
+    dplyr::filter(
+      !asv %in% asvs_to_remove
+    ) %>%
+    replace(is.na(.), "Unassigned") %>%
+    dplyr::arrange(concentration_ug_L)
+  
+  asvs_wide <-
+    simper_df %>%
+    dplyr::select(
+      dplyr::any_of(c("asv", "exp", "media", "chemical", "concentration_ug_L", "day", resp))
+      ) %>%
+    tidyr::pivot_wider(names_from = asv, values_from = !!sym(resp))
+  
+  species <-
+    asvs_wide %>%
+    dplyr::select(-c(1:5))
+  
+  groups <-
+    asvs_wide %>%
+    dplyr::select(1:5)
+  
+  # see simper documentation for meaning of columns
+  simper_object <-
+    vegan::simper(
+      species^exponent,
+      groups$concentration_ug_L
+    )
+  
+  subset_simper <-
+    paste0(
+      min(simper_df$concentration_ug_L),
+      "_",
+      max(simper_df$concentration_ug_L)
+    )
+  
+  df_simper <-
+    tibble::tibble(
+      asv = names(simper_object[[subset_simper]]$average),
+      avg = simper_object[[subset_simper]]$average
+    ) 
+  
+  df_simper_summary <-
+    df_simper %>%
+    dplyr::left_join(
+      simper_df %>%
+        dplyr::select(asv:species) %>%
+        dplyr::distinct()
+      ) %>%
+    dplyr::group_by(!!sym(tax_level)) %>%
+    dplyr::summarise(
+      simper_avg = sum(avg) * 100
+    ) %>%
+    dplyr::arrange(dplyr::desc(simper_avg))
+  
+  simper_names <- df_simper_summary %>% dplyr::pull(!!sym(tax_level))
+  simper_avg <- df_simper_summary %>% dplyr::pull(simper_avg)
 
-# Move first row to column names
-ASV_prokaryotes <- ASV_prokaryotes %>%
-  slice(-1) %>%  # Remove the first row
-  setNames(as.character(ASV_prokaryotes[1, ]))  # Set first row as column names
+  plt_data <-
+    simper_df %>%
+    dplyr::filter(chemical != "diuron") %>%
+    dplyr::left_join(df_simper, by = "asv") %>%
+    dplyr::filter(
+      !!sym(tax_level) %in% simper_names[n_taxa:1]
+    ) %>%
+    dplyr::group_by(asv) %>%
+    dplyr::mutate(
+      rel_change = RA - mean(RA[concentration_ug_L == 0], na.rm = TRUE),
+      !!tax_level := factor(!!sym(tax_level), levels = simper_names[n_taxa:1]) %>%
+        forcats::fct_relabel(
+          ~ paste0(., " <span style = \"font-family: Monaco; font-size: 8px\">(", 
+                   format(simper_avg[n_taxa:1], digits = 1), "%)</span>")
+          )
+      ) 
 
-# Rename first column from asv to sample
-colnames(ASV_prokaryotes)[1] <- "sample"
+  plt_data_summary <-
+    plt_data %>%
+    dplyr::group_by(!!sym(tax_level)) %>%
+    dplyr::mutate(rel_abund_ctrl = mean(RA[concentration_ug_L == 0])) %>%
+    dplyr::group_by(!!sym(tax_level), concentration_ug_L) %>%
+    dplyr::summarise(
+      weighted_rel_change = 1 + sum(rel_change) / sum(rel_abund_ctrl),
+      # Mean - Confidence interval
+      weighted_rel_change_lower = weighted_rel_change - (sd(rel_change) / sqrt(n())) / mean(rel_abund_ctrl),
+        # Confidence interval cannot be lower than -1
+        weighted_rel_change_lower = ifelse(
+          weighted_rel_change_lower < 0,
+          0, 
+          weighted_rel_change_lower
+        ), 
+        weighted_rel_change_upper = weighted_rel_change + (sd(rel_change) / sqrt(n())) / mean(rel_abund_ctrl)
+      ) %>%
+      dplyr::filter(concentration_ug_L != 0)
+    
+    plt_data_summary
+}
 
+prok_simper <- 
+prokaryotes_long %>%
+  dplyr::filter(day == 14) %>%
+  dplyr::group_by(exp, day) %>% 
+  tidyr::nest() %>%
+  dplyr::mutate(
+    simper_data = purrr::map(
+      data, simper_summary, tax_level = "class"
+    )
+  ) %>%
+  tidyr::unnest(simper_data) %>%
+  dplyr::mutate(
+    media = ifelse(exp %in% c(1, 3), "Borgmann", "Kuhl"),
+    season = ifelse(exp %in% c(1, 4), "Winter", "Summer"),
+  ) %>%
+  ggplot(aes(y = weighted_rel_change, x = class)) +
+  geom_segment(
+    mapping = aes(
+      color = factor(concentration_ug_L),
+      yend = 1
+      ),
+    linewidth = 1.25,
+    position = position_dodge(0.75),
+    size = 1.8
+  ) +
+  geom_hline(yintercept = 1, linewidth = 0.3, color = "#000000") +
+  scale_color_manual(values = colors, guide = "none") +
+  scale_fill_manual(values = colors, guide = "none") +
+  scale_y_continuous(
+    transform = scales::pseudo_log_trans(sigma = 1/128),
+    breaks = c(1/64, 1/16, 1/4, 1, 4, 16, 64),
+    labels = c("<b style = 'font-size: 8px'><sup>1</sup>&frasl;<sub>64</sub></b>",
+               "<b style = 'font-size: 8px'><sup>1</sup>&frasl;<sub>16</sub></b>",
+               "<b style = 'font-size: 8px'><sup>1</sup>&frasl;<sub>4</sub></b>",
+               "1", "4", "16", "64")
+  ) +
+  coord_flip(
+    ylim = c(1/64, 64)
+  ) +
+  ggh4x::facet_nested_wrap(
+    ~season + stringr::str_to_title(media), 
+    scales = "free_y",
+    strip.position = "right",
+    ncol = 1
+  ) +
+  labs(
+    x = NULL, y = "Fold change"
+  ) +
+  theme_bw() +
+  theme(
+    text = element_text(size = 8),
+    panel.grid.major = element_line(linewidth = 0.1, color = "#cccccc"),
+    panel.grid.minor = element_line(linewidth = 0.05, color = "#cccccc"),
+    axis.text.y = ggtext::element_markdown(),
+    axis.text.x = ggtext::element_markdown(),
+    strip.text.y = element_blank(),
+    strip.background.y = element_blank(),
+    legend.position = "bottom"
+  )
 
+prok_simper | prok_nmds
+
+ggsave(
+  "output/prokaryotes_both.png",
+  prok_simper | prok_nmds +
+    patchwork::plot_layout(
+      guides = "collect"
+    ) &
+    theme(
+      legend.position = "bottom",
+      legend.margin = margin(),
+      legend.spacing = unit(0, "mm")
+      ),
+  width = 16.5,
+  height = 16,
+  units = "cm",
+  dpi = 600
+)
+
+```
+
+```{r}
+prokaryotes_long %>%
+  dplyr::filter(day == 14) %>%
+  dplyr::group_by(exp, day, concentration_ug_L) %>%
+  dplyr::summarise(
+    shannon = vegan::diversity(RA),
+    simpson = vegan::diversity(RA, index = "simpson"),
+    richness = sum(RA > 0),
+    evenness = shannon / log(richness)
+  ) %>%
+  tidyr::pivot_longer(
+    c(shannon, simpson, richness, evenness)
+  ) %>% 
+  ggplot(aes(concentration_ug_L, value, color = name)) +
+  #geom_line() +
+  stat_smooth(method = "lm") +
+  scale_x_continuous(
+    transform = scales::pseudo_log_trans(),
+    breaks = c(0, 10^(0:4))
+  ) +
+  facet_grid(name~exp+day, scales = "free")
 ```
 
 ## Effects within each experiment?
 ## NMDS experiment 1:
 ```{r}
-pro_exp1 <- ASV_prokaryotes %>%
-  filter(!(exp %in% c(2, 3, 4))) 
+pro_exp1 <- prokaryotes_long %>%
+  dplyr::filter(exp == 1)
 
 # pristine rauswerfen
 pro_exp1 <- pro_exp1 %>%
@@ -325,112 +684,112 @@ NMDS_pro_exp1_plot
 
 ## NMDS experiment 2:
 ```{r}
-pro_exp2 <- ASV_prokaryotes %>%
-  filter(!(exp %in% c(1, 3, 4))) 
-
-pro_exp2 <- pro_exp2[, -c(1, 2, 3, 4, 5, 6)]
-
-# numeric values
-pro_exp2 <- pro_exp2 %>%
-  mutate(across(everything(), as.numeric))
-
-NMDS_pro_exp2 <-
-  metaMDS(
-    pro_exp2,
-    autotransform = FALSE,
-    k = 2 ,
-    distance = "bray",
-    na.rm = TRUE
-  )
-
-NMDS_pro_exp2$stress
-
-# exctract NMDS scores
-nmds_scores_exp2 <- as.data.frame(scores(NMDS_pro_exp2, display = "sites"))
-
-# add treatment column to NMDS scores
-Day        <- prokaryotes_sample_info $ day[prokaryotes_sample_info $ exp == "2"]
-Treatments <- prokaryotes_sample_info $ chemical[prokaryotes_sample_info $ exp == "2"]
-Concentration <- prokaryotes_sample_info $ concentration_ug_L[prokaryotes_sample_info $ exp == "2"]
-
-nmds_scores_exp2 $ Treatment = Treatments
-nmds_scores_exp2 $ Day = Day
-nmds_scores_exp2 $ Concentration = Concentration
-
-
-# For the plot: reorder treatment variable in data.scores_snail_absolute
-nmds_scores_exp2 $ Treatment <- factor(
-  nmds_scores_exp2 $ Treatment,
-  levels = c("control", "diuron", "pristine", "propyzamide")
-)
-
-
-NMDS_pro_exp2_plot <- ggplot(data = subset(nmds_scores_exp2, Treatment != "pristine"), 
-                             aes(x = NMDS1, y = NMDS2)) +
-  geom_point(
-    aes(shape = Treatment, color = Treatment),
-    size = 5,
-    alpha = 1,
-    show.legend = TRUE
-  )
-
-
-NMDS_pro_exp2_plot
+# pro_exp2 <- prokaryotes %>%
+#   filter(!(exp %in% c(1, 3, 4))) 
+# 
+# pro_exp2 <- pro_exp2[, -c(1, 2, 3, 4, 5, 6)]
+# 
+# # numeric values
+# pro_exp2 <- pro_exp2 %>%
+#   mutate(across(everything(), as.numeric))
+# 
+# NMDS_pro_exp2 <-
+#   metaMDS(
+#     pro_exp2,
+#     autotransform = FALSE,
+#     k = 2 ,
+#     distance = "bray",
+#     na.rm = TRUE
+#   )
+# 
+# NMDS_pro_exp2$stress
+# 
+# # exctract NMDS scores
+# nmds_scores_exp2 <- as.data.frame(scores(NMDS_pro_exp2, display = "sites"))
+# 
+# # add treatment column to NMDS scores
+# Day        <- prokaryotes_sample_info $ day[prokaryotes_sample_info $ exp == "2"]
+# Treatments <- prokaryotes_sample_info $ chemical[prokaryotes_sample_info $ exp == "2"]
+# Concentration <- prokaryotes_sample_info $ concentration_ug_L[prokaryotes_sample_info $ exp == "2"]
+# 
+# nmds_scores_exp2 $ Treatment = Treatments
+# nmds_scores_exp2 $ Day = Day
+# nmds_scores_exp2 $ Concentration = Concentration
+# 
+# 
+# # For the plot: reorder treatment variable in data.scores_snail_absolute
+# nmds_scores_exp2 $ Treatment <- factor(
+#   nmds_scores_exp2 $ Treatment,
+#   levels = c("control", "diuron", "pristine", "propyzamide")
+# )
+# 
+# 
+# NMDS_pro_exp2_plot <- ggplot(data = subset(nmds_scores_exp2, Treatment != "pristine"), 
+#                              aes(x = NMDS1, y = NMDS2)) +
+#   geom_point(
+#     aes(shape = Treatment, color = Treatment),
+#     size = 5,
+#     alpha = 1,
+#     show.legend = TRUE
+#   )
+# 
+# 
+# NMDS_pro_exp2_plot
 ```
 
 ## NMDS experiment 3:
 ```{r}
-pro_exp3 <- ASV_prokaryotes %>%
-  filter(!(exp %in% c(1, 2, 4))) 
-
-pro_exp3 <- pro_exp3[, -c(1, 2, 3, 4, 5, 6)]
-
-# numeric values
-pro_exp3 <- pro_exp3 %>%
-  mutate(across(everything(), as.numeric))
-
-NMDS_pro_exp3 <-
-  metaMDS(
-    pro_exp3,
-    autotransform = FALSE,
-    k = 2 ,
-    distance = "bray",
-    na.rm = TRUE
-  )
-
-NMDS_pro_exp3$stress
-
-# exctract NMDS scores
-nmds_scores_exp3 <- as.data.frame(scores(NMDS_pro_exp3, display = "sites"))
-
-# add treatment column to NMDS scores
-Day        <- prokaryotes_sample_info $ day[prokaryotes_sample_info $ exp == "3"]
-Treatments <- prokaryotes_sample_info $ chemical[prokaryotes_sample_info $ exp == "3"]
-Concentration <- prokaryotes_sample_info $ concentration_ug_L[prokaryotes_sample_info $ exp == "3"]
-
-nmds_scores_exp3 $ Treatment = Treatments
-nmds_scores_exp3 $ Day = Day
-nmds_scores_exp3 $ Concentration = Concentration
-
-
-# For the plot: reorder treatment variable in data.scores_snail_absolute
-nmds_scores_exp3 $ Treatment <- factor(
-  nmds_scores_exp3 $ Treatment,
-  levels = c("control", "diuron", "pristine", "propyzamide")
-)
-
-
-NMDS_pro_exp3_plot <- ggplot(data = subset(nmds_scores_exp3, Treatment != "pristine"), 
-                             aes(x = NMDS1, y = NMDS2)) +
-  geom_point(
-    aes(shape = Treatment, color = Treatment),
-    size = 5,
-    alpha = 1,
-    show.legend = TRUE
-  )
-
-
-NMDS_pro_exp3_plot
+# pro_exp3 <- prokaryotes %>%
+#   filter(!(exp %in% c(1, 2, 4))) 
+# 
+# pro_exp3 <- pro_exp3[, -c(1, 2, 3, 4, 5, 6)]
+# 
+# # numeric values
+# pro_exp3 <- pro_exp3 %>%
+#   mutate(across(everything(), as.numeric))
+# 
+# NMDS_pro_exp3 <-
+#   metaMDS(
+#     pro_exp3,
+#     autotransform = FALSE,
+#     k = 2 ,
+#     distance = "bray",
+#     na.rm = TRUE
+#   )
+# 
+# NMDS_pro_exp3$stress
+# 
+# # exctract NMDS scores
+# nmds_scores_exp3 <- as.data.frame(scores(NMDS_pro_exp3, display = "sites"))
+# 
+# # add treatment column to NMDS scores
+# Day        <- prokaryotes_sample_info $ day[prokaryotes_sample_info $ exp == "3"]
+# Treatments <- prokaryotes_sample_info $ chemical[prokaryotes_sample_info $ exp == "3"]
+# Concentration <- prokaryotes_sample_info $ concentration_ug_L[prokaryotes_sample_info $ exp == "3"]
+# 
+# nmds_scores_exp3 $ Treatment = Treatments
+# nmds_scores_exp3 $ Day = Day
+# nmds_scores_exp3 $ Concentration = Concentration
+# 
+# 
+# # For the plot: reorder treatment variable in data.scores_snail_absolute
+# nmds_scores_exp3 $ Treatment <- factor(
+#   nmds_scores_exp3 $ Treatment,
+#   levels = c("control", "diuron", "pristine", "propyzamide")
+# )
+# 
+# 
+# NMDS_pro_exp3_plot <- ggplot(data = subset(nmds_scores_exp3, Treatment != "pristine"), 
+#                              aes(x = NMDS1, y = NMDS2)) +
+#   geom_point(
+#     aes(shape = Treatment, color = Treatment),
+#     size = 5,
+#     alpha = 1,
+#     show.legend = TRUE
+#   )
+# 
+# 
+# NMDS_pro_exp3_plot
 ```
 
 
@@ -446,16 +805,16 @@ NMDS_pro_exp3_plot
 
 
 
-# 5 Eukaryotes
+# 4 Eukaryotes
 
 Load data
 ```{r}
-ASV_eukaryotes <- 
-  read.xlsx(file.path(prj, "data", "ASV_eukaryotes.xlsx"),
-            colNames = TRUE, rowNames = TRUE)
-
-View(ASV_eukaryotes)
-colnames(ASV_eukaryotes)
+# ASV_eukaryotes <- 
+#   read.xlsx(file.path(prj, "data", "ASV_eukaryotes.xlsx"),
+#             colNames = TRUE, rowNames = TRUE)
+# 
+# View(ASV_eukaryotes)
+# colnames(ASV_eukaryotes)
 
 ```
 
