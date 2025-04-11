@@ -10,12 +10,11 @@ editor_options:
   chunk_output_type: console
 ---
 
-# xxx Title of the paper xxx
+# Functional stability despite structural changes in freshwater biofilm communities exposed to an antibiotic and an herbicide – the role of nutrient levels and season 
 
-xxx Authors
+Sophie Oster, Eric Bollinger, Tobias Schmitt, Verena C. Schreiner, Sabine Filker, Mirco Bundschuh
 
-R script written by Sophie Oster\
-checked by xxx
+R script written by Eric Bollinger and Sophie Oster\
 
 \
 RPTU Kaiserslautern-Landau\
@@ -23,18 +22,23 @@ Fortstrasse 7\
 76829 Landau in der Pfalz\
 GERMANY
 
-This study was conducted with four treatments and three time points explanatory variables depending on the endpoint:
+Four chronic (14 days) exposure experiments were conducted in an indoor stream microcosm facility with lotic biofilm in the RPTU in Landau, Germany. These studies were conducted with four chemical treatments and two different nutrient media:
 
--   treatment (categorical)
+-   treatment/chemical stressor 
 
     -   uncontaminated control (negative control, NC)
 
-    -   herbicide propyzamide (Pro)
+    -   herbicide propyzamide (Pro, 1, 10, 100, 1000, 10000 ug L-1)
+
+    -   antibiotic ciprofloxacin (Cip, 1, 10, 1000, 1000 ug L-1)
+
+-   media/nutrients
+
+    -   SAM S5 (low nutrient media)
     
-    -   herbicide diuron (Diu)
-
-    -   antibiotic ciprofloxacin (Cip)
-
+    -   Kuhl (high nutrient media)
+    
+As functional endpoints the two biomass parameters ash free dry weight (AFDW) and the photosynthetic pigments (chlorophyll a, b & c) were measured. As structural endpoints DNA metabarcoding was conducted to investigate the prokaryotic and eukaryotic communities. 
 
 # R version 4.3.2
 R version used for this script: 4.3.2, use the following code chunk to download the correct version.
@@ -73,9 +77,7 @@ R version used for this script: 4.3.2, use the following code chunk to download 
 
 
 # Packages in a reproducible environment
-```{r}
-#| message: false
-#| warning: false
+```{r, message=FALSE, warning=FALSE}
 # Restore the environment:
 # renv::restore()
 # renv::init() 
@@ -85,16 +87,30 @@ source("code/00_setup.R")
 ```
 
 
-# Biofilm data
-```{r}
+# Functional endpoints
+```{r, warning=FALSE}
+# AFDW unit: mg / cm2
+# chlorophyll a,b & c unit: ug / cm2
 df_biofilm <- 
 read.delim("data/biofilm_endpoints.txt") %>%
   tidyr::separate(
     sample,
     into = c("exp", "treat", "repl", "day")
-  ) %>%
-  dplyr::filter(day == "T14", treat != "Diu") 
+  )
+    
+# Separate day 14 treatments after chronic exposure 
+df_biofilm <- df_biofilm %>%
+  dplyr::filter(day == "T14")
 
+# Rename media
+df_biofilm <- df_biofilm %>%   
+    mutate(media = case_when(
+    media == "borgmann" ~ "Low",
+    media == "kuhl" ~ "High",
+    TRUE ~ media
+  ))
+
+# Statistics
 # Test for concentrations
 df_biofilm %>%
   tidyr::pivot_longer(
@@ -135,14 +151,39 @@ df_biofilm %>%
     p_kruskal = p.adjust(p_kruskal, method = "BH")
   )
 
+
+# Calculate mean afdw, chla, chlb and chlc
+mean_biofilm_endppoints <-
+df_biofilm %>%
+  dplyr::filter(exp %in% c("1", "2", "3", "4"), 
+                media %in% c("Low", "High")) %>%
+  dplyr::group_by(exp, treat, media, season) %>%
+  dplyr::summarise(
+    mean_afdw = mean(afdw, na.rm = TRUE),
+    mean_chla = mean(chla, na.rm = TRUE),
+    mean_chlb = mean(chlb, na.rm = TRUE),
+    mean_chlc = mean(chlc, na.rm = TRUE),
+    .groups = "drop"
+    )
+
+# Plot
 df_biofilm %>%
   tidyr::pivot_longer(
-    afdw:chlc
+    AFDW:Chlc
   ) %>% 
   dplyr::mutate(
     season = ifelse(season == "w", "Winter", "Summer"),
     media = stringr::str_to_title(media),
-    name = stringr::str_to_upper(name)
+    treat = dplyr::case_when(
+      treat == "NC" & exp == 1 ~ "Ciprofloxacin",
+      treat == "NC" & exp == 2 ~ "Ciprofloxacin",
+      treat == "NC" & exp == 3 ~ "Propyzamide",
+      treat == "NC" & exp == 4 ~ "Propyzamide",
+      stringr::str_detect(treat, "Cip") ~ "Ciprofloxacin",
+      stringr::str_detect(treat, "Pro") ~ "Propyzamide",  
+      TRUE ~ treat 
+    ),
+    facet_label = paste0(season, " - ", treat) 
   ) %>%
   ggplot(aes(concentration, value)) +
   stat_summary(
@@ -159,7 +200,7 @@ df_biofilm %>%
     alpha = 0.7,
     shape = 16,
     size = 2
-    ) +
+  ) +
   stat_summary(
     fun = mean,
     geom = "point",
@@ -180,18 +221,41 @@ df_biofilm %>%
   ) +
   labs(
     y = NULL,
-    x = "Concentration (µg/L)"
+    x = expression("Concentration (" * µg ~ L^-1 * ")")
   ) +
   scico::scale_color_scico_d(end = 0.8, palette = "batlow", guide = "none") +
   ggh4x::facet_nested(
-    name ~ season + media,
+    name ~ facet_label + media,
     scales = "free"
-  ) 
+  ) +
+  theme(
+    text = element_text(size = 9),
+    axis.title.x = element_text(face = "bold"),
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+    strip.text.x = element_text(size = 9),
+    strip.text.y = element_text(size = 9),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    axis.ticks.x = element_line(),
+    axis.ticks.y = element_line()
+)
 
+
+# Save the plot
 ggsave(
   "output/biofilm_parameters.png",
   width = 16.5,
   height = 12,
+  units = "cm",
+  dpi = 600
+)
+
+# Save as vector graphic, minor adaptions for better readability with Inkscape
+ggsave(
+  "output/biofilm_parameters.svg",
+  device = "svg",
+  width = 16.5,
+  height = 16,
   units = "cm",
   dpi = 600
 )
@@ -200,13 +264,13 @@ ggsave(
 # Prokaryotes
 
 ## Data loading and wrangling
-```{r}
+```{r, warning=FALSE}
 prokaryotes <-
   read.table("data/ASV_prokaryotes.txt",
              header = TRUE, sep = "\t") %>%
   tibble::tibble()
 
-field_communities <- paste0("P", c(13, 21, 36))
+field_communities <- paste0("P", c(13, 36))
 
 prokaryotes_field <- prokaryotes %>% 
   dplyr::select(
@@ -232,7 +296,7 @@ paste(round(100 * (1 - sum(rows_to_keep) / nrow(prokaryotes)), 2), "%")
 prokaryotes <- prokaryotes[rows_to_keep, ]
 
 # Taxonomy
-tax_ranks <- c("kingdom", "phylum", "class", "order", "family", "genus", "species")
+tax_ranks_prok <- c("kingdom", "phylum", "class", "order", "family", "genus", "species")
 
 # Add taxonomny in columns
 prokaryotes_long <-
@@ -240,12 +304,12 @@ prokaryotes_long <-
   # dplyr::select(taxonomy_prokaryotes) %>%
   tidyr::separate(
     taxonomy_prokaryotes,
-    into = tax_ranks,
+    into = tax_ranks_prok,
     sep = ","
   ) %>%
   dplyr::mutate(
     dplyr::across(
-      dplyr::any_of(tax_ranks),
+      dplyr::any_of(tax_ranks_prok),
       ~stringr::str_remove(.x, ".*:")
     )
   ) %>%
@@ -267,12 +331,12 @@ prokaryotes_long <- prokaryotes_long %>%
 prokaryotes_long %>%
  dplyr::summarise(
    dplyr::across(
-     dplyr::any_of(tax_ranks),
+     dplyr::any_of(tax_ranks_prok),
      ~sum(is.na(.x)) / length(.x)
   )
 )
 
-# dann relative abundance pro probe berechnen 
+# Relative Abundance
 prokaryotes_long <-
   prokaryotes_long %>%
   dplyr::mutate(
@@ -280,17 +344,37 @@ prokaryotes_long <-
     .after = reads,
     .by = sample
     )
+
+# Rename media
+prokaryotes_long <- prokaryotes_long %>%
+    mutate(media = case_when(
+    media == "borgmann" ~ "Low",
+    media == "kuhl" ~ "High",
+    TRUE ~ media
+  ))
+
+
+# Calculate percentage of data present in tax columns 
+# Subset the dataframe to the relevant columns
+columns_of_interest_prok <- c("phylum", "class", "order", "family", "genus", "species")
+data_subset_prok <- prokaryotes_long[, columns_of_interest_prok]
+
+# Calculate the percentage of non-missing values per column
+missing_percentage_prok_tax <- colSums(!is.na(data_subset_prok)) / nrow(data_subset_prok) * 100
+
+# View the result
+missing_percentage_prok_tax
 ```
 
 ## Ordination and PERMANOVA
-```{r}
+```{r, warning=FALSE}
 prok_analyzed <- 
 prokaryotes_long %>%
-  dplyr::group_by(exp, day) %>%
+  dplyr::group_by(exp) %>%
   tidyr::nest() %>%
   dplyr::mutate(
     obj = purrr::map(
-      data, ~wcmd_and_adonis(.x)
+      data, ~ wcmd_and_adonis(.x)
     ),
     wcmd = purrr::map(
       obj, ~.x$wcmd
@@ -301,18 +385,16 @@ prokaryotes_long %>%
   ) %>%
   tidyr::unnest(wcmd)
 
-prok_analyzed <- 
-  prok_analyzed %>%
-  dplyr::filter(day == 14)
+prok_analyzed$obj[[1]]
 
 prok_analyzed_sign <- 
 prok_analyzed %>%
-  dplyr::group_by(day, exp, media) %>%
+  dplyr::group_by(exp, media) %>%
   dplyr::reframe(
     sign = unique(permanova)
   ) %>%
     dplyr::mutate(
-    season = ifelse(exp %in% c(1, 4), "Winter", "Summer")
+    season = ifelse(exp %in% c(1, 2), "Winter", "Summer")
   )
 
 conc_fac <- levels(factor(prok_analyzed$concentration_ug_L))
@@ -321,102 +403,122 @@ colors <-
   colorspace::lighten(0.2)
 names(colors) <- levels(factor(prok_analyzed$concentration_ug_L))
 
-prok_nmds <-
+# Plot
+prok_wpca <-
 prok_analyzed %>%
   dplyr::mutate(
-    connect = ifelse(chemical %in% c("control", "diuron"), 1, NA),
-    season = ifelse(exp %in% c(1, 4), "Winter", "Summer")
+    season = ifelse(exp %in% c(1, 2), "Winter", "Summer"),
+    chemical = factor(
+      stringr::str_to_title(chemical), 
+      levels = c("Control", "Ciprofloxacin", "Propyzamide") 
+    )
   ) %>%
   ggplot(aes(WCMD1, WCMD2)) +
   geom_vline(xintercept = 0, linetype = 2, linewidth = 0.2, color = "#aaaaaa") +
   geom_hline(yintercept = 0, linetype = 2, linewidth = 0.2, color = "#aaaaaa") +
-  geom_line(
-    data = . %>% tidyr::drop_na(connect),
-    aes(group = connect),
-    linetype = 2, linewidth = 0.4,
-    color = "#333333"
-  ) +
   geom_point(
     aes(
-      shape = stringr::str_to_title(chemical),
+      shape = chemical,  
       fill = factor(concentration_ug_L)
-      ),
-    size = 2
+    ),
+    size = 3
   ) +
   geom_label(
     data = prok_analyzed_sign,
     aes(label = paste("p = ", round(sign, 3)), x = 0.75, y = -0.3),
-    size = 6 / ggplot2:::.pt,
+    size = 7 / ggplot2:::.pt,
     fill = "#ffffff88",
     label.size = 0,
     hjust = 1,
     vjust = 0
   ) +
-  scale_shape_manual(values = c(21, 22, 24, 25)) +
+  scale_shape_manual(
+    values = c("Control" = 21, "Ciprofloxacin" = 22, "Propyzamide" = 25)  
+  ) +
   scale_fill_manual(values = colors) +
   guides(
-    fill = 
-      guide_legend(
-        ncol = 4,
-        override.aes = list(shape = 21)
-        ),
-    shape = 
-      guide_legend(
-        ncol = 2
-        )
-    ) +
+    fill = guide_legend(
+      ncol = 4,
+      override.aes = list(shape = 21)
+    ),
+    shape = guide_legend(
+      title = "Chemical",
+      ncol = 1  
+    )
+  ) +
   ggh4x::facet_nested_wrap(
     ~season + stringr::str_to_title(media), 
     ncol = 1,
     strip.position = "right"
-    ) +
+  ) +
   labs(
     y = NULL,
-    fill = "Concentration (µg/L)",
+    x = "WPCA1",
+    fill = expression("Concentration (" * µg ~ L^-1 * ")"),
     shape = "Chemical"
   ) +
   theme_bw() +
   theme(
-    text = element_text(size = 8),
+    text = element_text(size = 9),
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
     panel.grid.major = element_line(linewidth = 0.1, color = "#cccccc"),
     panel.grid.minor = element_line(linewidth = 0.05, color = "#cccccc"),
     strip.background.y = ggh4x::element_part_rect(side = "l", fill = NA),
-    strip.text.y = element_text(size = 6, face = "bold"),
+    strip.text.y = element_text(size = 7, face = "bold"),
     legend.position = "bottom",
     legend.title.position = "top",
-    legend.key.spacing.x = unit(0, "mm"),
+    legend.key.spacing.x = unit(1, "mm"),
     legend.key.spacing.y = unit(0, "mm"),
     legend.key.size = unit(4, "mm")
   )
 
+
+prok_wpca
+
 ggsave(
-  "output/prokaryotes.png",
-  prok_nmds,
+  "output/prokaryotes_wpca.png",
+  prok_wpca,
   width = 16.5,
-  height = 5,
+  height = 16,
+  units = "cm",
+  dpi = 600
+)
+
+# Save as vector graphic, minor adaptions for better readability with Inkscape
+ggsave(
+  "output/prokaryotes_wpca.svg",
+  prok_wpca,
+  device = "svg",
+  width = 16.5,
+  height = 16,
   units = "cm",
   dpi = 600
 )
 ```
 
 ## SIMPER
-```{r}
-prok_simper <- 
+```{r, warning=FALSE, message=FALSE}
+# SIMPER on phylum basis
+prok_simper_phylum <- 
 prokaryotes_long %>%
-  dplyr::filter(day == 14) %>%
-  dplyr::group_by(exp, day) %>% 
+  dplyr::group_by(exp) %>% 
   tidyr::nest() %>%
   dplyr::mutate(
     simper_data = purrr::map(
-      data, simper_summary, tax_level = "class"
+      data, function(x) {
+        df_for_simper <-
+          x %>%
+          dplyr::bind_rows(x)
+        simper_summary(df_for_simper, tax_level = "phylum")
+      }
     )
   ) %>%
   tidyr::unnest(simper_data) %>%
   dplyr::mutate(
-    media = ifelse(exp %in% c(1, 3), "Borgmann", "Kuhl"),
-    season = ifelse(exp %in% c(1, 4), "Winter", "Summer"),
+    media = ifelse(exp %in% c(1, 3), "Low", "High"),
+    season = ifelse(exp %in% c(1, 2), "Winter", "Summer"),
   ) %>%
-  ggplot(aes(y = weighted_rel_change, x = class)) +
+  ggplot(aes(y = weighted_rel_change, x = phylum)) +
   geom_segment(
     mapping = aes(
       color = factor(concentration_ug_L),
@@ -431,14 +533,11 @@ prokaryotes_long %>%
   scale_fill_manual(values = colors, guide = "none") +
   scale_y_continuous(
     transform = scales::pseudo_log_trans(sigma = 1/128),
-    breaks = c(1/64, 1/16, 1/4, 1, 4, 16, 64),
-    labels = c("<b style = 'font-size: 8px'><sup>1</sup>&frasl;<sub>64</sub></b>",
-               "<b style = 'font-size: 8px'><sup>1</sup>&frasl;<sub>16</sub></b>",
-               "<b style = 'font-size: 8px'><sup>1</sup>&frasl;<sub>4</sub></b>",
-               "1", "4", "16", "64")
+    breaks = c(1/256, 1/64, 1/16, 1/4, 1, 4, 16, 64),
+    labels = c("1/256","1/64","1/16", "1/4", "1", "4", "16", "64")
   ) +
   coord_flip(
-    ylim = c(1/64, 64)
+    ylim = c(1/256, 64)
   ) +
   ggh4x::facet_nested_wrap(
     ~season + stringr::str_to_title(media), 
@@ -451,29 +550,103 @@ prokaryotes_long %>%
   ) +
   theme_bw() +
   theme(
-    text = element_text(size = 8),
+    text = element_text(size = 9),
     panel.grid.major = element_line(linewidth = 0.1, color = "#cccccc"),
     panel.grid.minor = element_line(linewidth = 0.05, color = "#cccccc"),
     axis.text.y = ggtext::element_markdown(),
-    axis.text.x = ggtext::element_markdown(),
+    #axis.text.x = ggtext::element_markdown(),
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
     strip.text.y = element_blank(),
     strip.background.y = element_blank(),
     legend.position = "bottom"
   )
 
-prok_simper | prok_nmds
 
+prok_simper_phylum | prok_wpca
+
+# Save as vector graphic, minor adaptions for better readability with Inkscape
 ggsave(
-  "output/prokaryotes_both.png",
-  prok_simper | prok_nmds +
-    patchwork::plot_layout(
-      guides = "collect"
-    ) &
-    theme(
-      legend.position = "bottom",
-      legend.margin = margin(),
-      legend.spacing = unit(0, "mm")
+  "output/prokaryotes_both_phylum_level.svg",
+  prok_simper_phylum | prok_wpca,
+  device = "svg",
+  width = 16.5,
+  height = 16,
+  units = "cm",
+  dpi = 600
+)
+
+
+# SIMPER on family basis
+prok_simper_family <- 
+prokaryotes_long %>%
+  dplyr::group_by(exp) %>% 
+  tidyr::nest() %>%
+  dplyr::mutate(
+    simper_data = purrr::map(
+      data, function(x) {
+        df_for_simper <-
+          x %>%
+          dplyr::bind_rows(x)
+        simper_summary(df_for_simper, tax_level = "family")
+      }
+    )
+  ) %>%
+  tidyr::unnest(simper_data) %>%
+  dplyr::mutate(
+    media = ifelse(exp %in% c(1, 3), "Low", "High"),
+    season = ifelse(exp %in% c(1, 2), "Winter", "Summer"),
+  ) %>%
+  ggplot(aes(y = weighted_rel_change, x = family)) +
+  geom_segment(
+    mapping = aes(
+      color = factor(concentration_ug_L),
+      yend = 1
       ),
+    linewidth = 1.25,
+    position = position_dodge(0.75),
+    size = 1.8
+  ) +
+  geom_hline(yintercept = 1, linewidth = 0.3, color = "#000000") +
+   scale_color_manual(values = colors, guide = "none") +
+   scale_fill_manual(values = colors, guide = "none") +
+ scale_y_continuous(
+  transform = scales::pseudo_log_trans(sigma = 1/128),
+  breaks = c(1/64, 1/16, 1/4, 1, 4, 16, 64, 256),
+  labels = c("1/64","1/16", "1/4", "1", "4", "16", "64", "256")
+  ) +
+  coord_flip(
+    ylim = c(1/256, 256)
+  ) +
+  ggh4x::facet_nested_wrap(
+    ~season + stringr::str_to_title(media), 
+    scales = "free_y",
+    strip.position = "right",
+    ncol = 1
+  ) +
+  labs(
+    x = NULL, y = "Fold change"
+  ) +
+  theme_bw() +
+  theme(
+    text = element_text(size = 9),
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+    panel.grid.major = element_line(linewidth = 0.1, color = "#cccccc"),
+    panel.grid.minor = element_line(linewidth = 0.05, color = "#cccccc"),
+    axis.text.y = ggtext::element_markdown(),
+   # axis.text.x = ggtext::element_markdown(),
+    strip.text.y = element_blank(),
+    strip.background.y = element_blank(),
+    legend.position = "bottom"
+  )
+
+
+prok_simper_family | prok_wpca
+
+# Save as vector graphic, minor adaptions for better readability with Inkscape
+ggsave(
+  "output/prokaryotes_both_family_level.svg",
+  prok_simper_family | prok_wpca,
+  device = "svg",
   width = 16.5,
   height = 16,
   units = "cm",
@@ -481,46 +654,307 @@ ggsave(
 )
 ```
 
-```{r}
+## Diversity indices
+```{r, warning=FALSE, message=FALSE}
+# Diversity indices 
 prokaryotes_long %>%
-  dplyr::filter(day == 14) %>%
-  dplyr::group_by(exp, day, concentration_ug_L) %>%
+  dplyr::group_by(exp, concentration_ug_L) %>%
   dplyr::summarise(
     shannon = vegan::diversity(RA),
     simpson = vegan::diversity(RA, index = "simpson"),
     richness = sum(RA > 0),
     evenness = shannon / log(richness)
   ) %>%
-  tidyr::pivot_longer(
-    c(shannon, simpson, richness, evenness)
-  ) %>% 
-  ggplot(aes(concentration_ug_L, value, color = name)) +
-  geom_line() +
-  stat_smooth(method = "lm") +
+  print(n = 50)
+
+# Plot
+exp_labels <- c(
+  "1" = "Winter Low-Nutrient, Cip",
+  "2" = "Winter High-Nutrient, Cip",
+  "3" = "Summer Low-Nutrient, Pro",
+  "4" = "Summer High-Nutrient, Pro"
+)
+
+# Process the main dataset 
+prok_diversity <- prokaryotes_long %>%
+  dplyr::group_by(exp, concentration_ug_L) %>%
+  dplyr::summarise(
+    shannon = vegan::diversity(RA),
+    simpson = vegan::diversity(RA, index = "simpson"),
+    richness = sum(RA > 0),
+    evenness = shannon / log(richness),
+    .groups = "drop"
+  ) %>%
+  tidyr::pivot_longer(c(shannon, simpson, richness, evenness)) %>%
+  dplyr::mutate(
+    name = stringr::str_to_title(name),
+    exp = factor(exp, levels = c("4", "3", "2", "1"))
+  )
+
+
+# Plot 
+prok_diversity_indices <-
+ggplot() +
+  geom_line(data = prok_diversity, aes(concentration_ug_L, value, color = name)) +
+  stat_smooth(data = prok_diversity, aes(concentration_ug_L, value, color = name), method = "lm", se = TRUE) +
   scale_x_continuous(
-    transform = scales::pseudo_log_trans(),
-    breaks = c(0, 10^(0:4))
+    trans = scales::pseudo_log_trans(),
+    breaks = c(0, 1, 10, 100, 1000, 10000),
+    labels = c("0", "1", "10", "100", "1000", "10000")  
   ) +
-  facet_grid(name~exp+day, scales = "free")
+
+  facet_grid(name ~ exp, scales = "free", labeller = labeller(exp = exp_labels)) +
+
+  labs(
+    y = NULL,
+    x = expression("Concentration (" * µg ~ L^-1 * ")"),
+    shape = "Chemical"
+  ) +
+
+  theme(
+    legend.position = "none",
+    panel.grid.minor.x = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1) 
+  )
+
+
+prok_diversity_indices
+
+ggsave(
+  "output/prokaryotes_diversity_indices.png",
+  prok_diversity_indices,
+  width = 16.5,
+  height = 16,
+  units = "cm",
+  dpi = 600
+)
+
+# Save as vector graphic, minor adaptions for better readability with Inkscape
+ggsave(
+  "output/prokaryotes_diversity_indices.svg",
+  prok_diversity_indices,
+  device = "svg",
+  width = 16.5,
+  height = 16,
+  units = "cm",
+  dpi = 600
+)
+
 ```
+## Stacked bar plots
+```{r, warning=FALSE}
+# Define a 43-color palette
+custom_palette <- c(
+  "#1B1811", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33", "#A65628", "#E41A1C", "#999999",
+  "#66C2A5", "#FC8D62", "#8DA0CB", "#E78AC3", "#A6D854", "#FFD92F", "#E5C494", "#B3B3B3", "#1B9E77",
+  "#D95F02", "#7570B3", "#E7298A", "#66A61E", "#E6AB02", "#A6761D", "#666666", "#8C510A", "#BF812D",
+  "#DFC27D", "#F6E8C3", "#01665E", "#35978F", "#80CDC1", "#C7EAE5", "#003C30", "#A50026", "#D73027",
+  "#F46D43", "#FDAE61", "#FEE08B", "#D9EF8B", "#66BD63", "#1A9850", "#006837"
+)
+
+# Renaming for plot
+prokaryotes_long <- prokaryotes_long %>%
+  mutate(exp = factor(exp, 
+                      levels = c(1, 2, 3, 4), 
+                      labels = c("Winter Low-Nutrient", 
+                                 "Winter High-Nutrient", 
+                                 "Summer Low-Nutrient",
+                                 "Summer High-Nutrient")))
+
+
+# Stacked bar plot phylum level
+prokaryotes_long <- prokaryotes_long %>%
+  mutate(
+    sample = factor(sample, levels = unique(sample)),  
+    concentration_ug_L = factor(concentration_ug_L, levels = c("0", "1", "10", "100", "1000", "10000"))  
+  )
+
+sample_to_concentration <- setNames(prokaryotes_long$concentration_ug_L, prokaryotes_long$sample)
+
+
+prok_barplot_phylum <- prokaryotes_long %>%
+  ggplot(aes(x = sample, y = RA, fill = phylum)) +
+  geom_bar(stat = "identity") +
+  labs(x = "Sample", y = "Abundance", fill = "Phylum") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_manual(values = custom_palette) +
+  facet_wrap(~exp, ncol = 2, scales = "free_x") + 
+  scale_x_discrete(labels = function(x) {
+    concentration_mapping <- setNames(prokaryotes_long$concentration_ug_L, prokaryotes_long$sample)
+    concentration_mapping[x]  
+  })
+  
+prok_barplot_phylum
+
+ggsave(
+  "output/prok_barplot_phylum.png",
+  prok_barplot_phylum,
+  width = 16.5,
+  height = 16,
+  units = "cm",
+  dpi = 600,
+  bg = "white" 
+)
+
+# Save as vector graphic, minor adaptions for better readability with Inkscape
+ggsave(
+  "output/prok_barplot_phylum.svg",
+  prok_barplot_phylum,
+  device = "svg",
+  width = 16.5,
+  height = 16,
+  units = "cm",
+  dpi = 600
+)
+
+
+# Barplot for Proteobacteria family
+prok_barplot_proteobacteria <- prokaryotes_long %>%
+  dplyr::filter(phylum == "Proteobacteria") %>%
+  ggplot(aes(x = sample, y = RA, fill = family)) +
+  geom_bar(stat = "identity") +
+  labs(x = "Sample", y = "Abundance", fill = "Family") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_manual(values = custom_palette) +
+  facet_wrap(~exp, ncol = 2, scales = "free_x") + 
+  scale_x_discrete(labels = function(x) {
+    concentration_mapping <- setNames(prokaryotes_long$concentration_ug_L, prokaryotes_long$sample)
+    concentration_mapping[x]  
+  })
+  
+
+prok_barplot_proteobacteria
+
+ggsave(
+  "output/prok_barplot_proteobacteria.png",
+  prok_barplot_proteobacteria,
+  width = 25,
+  height = 20,
+  units = "cm",
+  dpi = 600,
+  bg = "white" 
+)
+
+# Save as vector graphic, minor adaptions for better readability with Inkscape
+ggsave(
+  "output/prok_barplot_proteobacteria.svg",
+  prok_barplot_proteobacteria,
+  device = "svg",
+  width = 16.5,
+  height = 16,
+  units = "cm",
+  dpi = 600
+)
+
+```
+
+## Prokaryotes field
+```{r, warning=FALSE}
+# Prokaryotes field
+# Extract ASV with too less findings
+rows_to_keep <-
+prokaryotes_field %>% 
+  dplyr::select_if(is.numeric) %>%
+  rowSums() > 5
+
+# Percentage removed by omitting row sums smaller or equal to 5
+paste(round(100 * (1 - sum(rows_to_keep) / nrow(prokaryotes_field)), 2), "%")
+
+prokaryotes_field <- prokaryotes_field[rows_to_keep, ]
+
+
+# Add taxonomny in columns
+prokaryotes_field_long <-
+  prokaryotes_field %>%
+  tidyr::separate(
+    taxonomy_prokaryotes,
+    into = tax_ranks_prok,
+    sep = ","
+  ) %>%
+  dplyr::mutate(
+    dplyr::across(
+      dplyr::any_of(tax_ranks_prok),
+      ~stringr::str_remove(.x, ".*:")
+    )
+  ) %>%
+  tidyr::pivot_longer(
+    cols = dplyr::starts_with("P", ignore.case = FALSE),
+    values_to = "reads",
+    names_to = "sample"
+  )
+
+# Relative Abundance
+prokaryotes_field_long <-
+  prokaryotes_field_long %>%
+  dplyr::mutate(
+    RA = reads / sum(reads),
+    .after = reads,
+    .by = sample
+    )
+
+# Stacked bar plot - phylum level
+prok_field_barplot_phylum <- prokaryotes_field_long %>%
+  ggplot(aes(x = sample, y = RA, fill = phylum)) +
+  geom_bar(stat = "identity") +
+  labs(x = NULL, y = "Abundance", fill = "Phylum") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_manual(values = custom_palette) +
+  scale_x_discrete(labels = c("P13" = "Winter", "P36" = "Summer"))
+
+prok_field_barplot_phylum
+
+ggsave(
+  "output/prokaryotes_field_phylum.png",
+  prok_field_barplot_phylum,
+  width = 16.5,
+  height = 16,
+  units = "cm",
+  dpi = 600,
+  bg = "white" 
+)
+
+# Save as vector graphic, minor adaptions for better readability with Inkscape
+ggsave(
+  "output/prokaryotes_field_phylum.svg",
+  prok_field_barplot_phylum,
+  device = "svg",
+  width = 16.5,
+  height = 16,
+  units = "cm",
+  dpi = 600
+)
+
+# Diversity indices
+prokaryotes_field_long %>%
+  dplyr::group_by(sample) %>%
+  dplyr::summarise(
+    shannon = vegan::diversity(RA),
+    simpson = vegan::diversity(RA, index = "simpson"),
+    richness = sum(RA > 0),
+    evenness = shannon / log(richness)
+  ) 
+```
+
 
 # Eukaryotes
 
 ## Data loading and wrangling
-```{r}
+```{r, warning=FALSE}
 eukaryotes <-
   read.table("data/ASV_eukaryotes.txt",
              header = TRUE, sep = "\t") %>%
   tibble::tibble()
 
-field_communities <- paste0("E", c(13, 21, 36)) # E21 pool fail --> has to be removed
+field_communities <- paste0("E", c(13, 36)) 
 
 eukaryotes_field <- eukaryotes %>% 
   dplyr::select(
-    dplyr::any_of(
-      c("asv", field_communities, "taxonomy_eukaryotes")
-      )
-    )
+    dplyr::any_of(c("asv", field_communities, "taxonomy_eukaryotes"))
+  )
 
 eukaryotes <- eukaryotes %>% 
   dplyr::select(!dplyr::any_of(field_communities)) %>%
@@ -532,14 +966,13 @@ eukaryotes %>%
   dplyr::select_if(is.numeric) %>%
   rowSums() > 5
 
-
 # Percentage removed by omitting row sums smaller or equal to 5
 paste(round(100 * (1 - sum(rows_to_keep) / nrow(eukaryotes)), 2), "%")
 
 eukaryotes <- eukaryotes[rows_to_keep, ]
 
-# Taxonomy
-tax_ranks <- c("domain", "kingdom", "phylum", "class", "order", "family", "genus", "species")
+# New tax ranks
+tax_ranks_euk <- c("domain" ,"kingdom", "phylum", "class", "order", "family", "genus", "species")
 
 # Add taxonomny in columns
 eukaryotes_long <-
@@ -547,12 +980,12 @@ eukaryotes_long <-
   # dplyr::select(taxonomy_eukaryotes) %>%
   tidyr::separate(
     taxonomy_eukaryotes,
-    into = tax_ranks,
+    into = tax_ranks_euk,
     sep = ","
   ) %>% 
   dplyr::mutate(
     dplyr::across(
-      dplyr::any_of(tax_ranks),
+      dplyr::any_of(tax_ranks_euk),
       ~stringr::str_remove(.x, ".*:")
     )
   ) %>%
@@ -577,12 +1010,12 @@ eukaryotes_long <- eukaryotes_long %>%
 eukaryotes_long %>%
  dplyr::summarise(
    dplyr::across(
-     dplyr::any_of(tax_ranks),
+     dplyr::any_of(tax_ranks_euk),
      ~sum(is.na(.x)) / length(.x)
   )
 )
 
-# dann relative abundance pro probe berechnen 
+# Relative abundance
 eukaryotes_long <-
   eukaryotes_long %>%
   dplyr::mutate(
@@ -590,13 +1023,33 @@ eukaryotes_long <-
     .after = reads,
     .by = sample
     )
+
+# Rename media
+eukaryotes_long <- eukaryotes_long %>%   
+    mutate(media = case_when(
+    media == "borgmann" ~ "Low",
+    media == "kuhl" ~ "High",
+    TRUE ~ media
+  ))
+
+
+# Calculate percentage of data present in tax columns 
+# Subset the dataframe to the relevant columns
+columns_of_interest_euk <- c("phylum", "class", "order", "family", "genus", "species")
+data_subset_euk <- eukaryotes_long[, columns_of_interest_euk]
+
+# Calculate the percentage of non-missing values per column
+missing_percentage_euk_tax <- colSums(!is.na(data_subset_euk)) / nrow(data_subset_euk) * 100
+
+# View the result
+missing_percentage_euk_tax
 ```
 
 ## Ordination and PERMANOVA
-```{r}
+```{r, warning=FALSE}
 euk_analyzed <- 
 eukaryotes_long %>%
-  dplyr::group_by(exp, day) %>%
+  dplyr::group_by(exp) %>%
   tidyr::nest() %>%
   dplyr::mutate(
     obj = purrr::map(
@@ -611,18 +1064,15 @@ eukaryotes_long %>%
   ) %>%
   tidyr::unnest(wcmd)
 
-euk_analyzed <- 
-  euk_analyzed %>%
-  dplyr::filter(day == 14)
 
 euk_analyzed_sign <- 
 euk_analyzed %>%
-  dplyr::group_by(day, exp, media) %>%
+  dplyr::group_by(exp, media) %>%
   dplyr::reframe(
     sign = unique(permanova)
   ) %>%
     dplyr::mutate(
-    season = ifelse(exp %in% c(1, 4), "Winter", "Summer")
+    season = ifelse(exp %in% c(1, 2), "Winter", "Summer")
   )
 
 conc_fac <- levels(factor(euk_analyzed$concentration_ug_L))
@@ -631,38 +1081,38 @@ colors <-
   colorspace::lighten(0.2)
 names(colors) <- levels(factor(euk_analyzed$concentration_ug_L))
 
-euk_nmds <-
+
+euk_wpca <-
 euk_analyzed %>%
   dplyr::mutate(
-    connect = ifelse(chemical %in% c("control", "diuron"), 1, NA),
-    season = ifelse(exp %in% c(1, 4), "Winter", "Summer")
+    season = ifelse(exp %in% c(1, 2), "Winter", "Summer"),
+    chemical = factor(
+      stringr::str_to_title(chemical), 
+      levels = c("Control", "Ciprofloxacin", "Propyzamide") 
+    )
   ) %>%
   ggplot(aes(WCMD1, WCMD2)) +
   geom_vline(xintercept = 0, linetype = 2, linewidth = 0.2, color = "#aaaaaa") +
   geom_hline(yintercept = 0, linetype = 2, linewidth = 0.2, color = "#aaaaaa") +
-  geom_line(
-    data = . %>% tidyr::drop_na(connect),
-    aes(group = connect),
-    linetype = 2, linewidth = 0.4,
-    color = "#333333"
-  ) +
   geom_point(
     aes(
-      shape = stringr::str_to_title(chemical),
+      shape = chemical,
       fill = factor(concentration_ug_L)
       ),
-    size = 2
+    size = 3
   ) +
   geom_label(
     data = euk_analyzed_sign,
     aes(label = paste("p = ", round(sign, 3)), x = 0.75, y = -0.3),
-    size = 6 / ggplot2:::.pt,
+    size = 7 / ggplot2:::.pt,
     fill = "#ffffff88",
     label.size = 0,
     hjust = 1,
     vjust = 0
   ) +
-  scale_shape_manual(values = c(21, 22, 24, 25)) +
+  scale_shape_manual(
+    values = c("Control" = 21, "Ciprofloxacin" = 22, "Propyzamide" = 25)  
+  )  +
   scale_fill_manual(values = colors) +
   guides(
     fill = 
@@ -672,7 +1122,8 @@ euk_analyzed %>%
         ),
     shape = 
       guide_legend(
-        ncol = 2
+        title = "Chemical",
+        ncol = 1
         )
     ) +
   ggh4x::facet_nested_wrap(
@@ -682,51 +1133,148 @@ euk_analyzed %>%
     ) +
   labs(
     y = NULL,
-    fill = "Concentration (µg/L)",
+    x = "WPCA1",
+    fill = expression("Concentration (" * µg ~ L^-1 * ")"),
     shape = "Chemical"
   ) +
   theme_bw() +
   theme(
-    text = element_text(size = 8),
+    text = element_text(size = 9),
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
     panel.grid.major = element_line(linewidth = 0.1, color = "#cccccc"),
     panel.grid.minor = element_line(linewidth = 0.05, color = "#cccccc"),
     strip.background.y = ggh4x::element_part_rect(side = "l", fill = NA),
-    strip.text.y = element_text(size = 6, face = "bold"),
+    strip.text.y = element_text(size = 7, face = "bold"),
     legend.position = "bottom",
     legend.title.position = "top",
-    legend.key.spacing.x = unit(0, "mm"),
+    legend.key.spacing.x = unit(1, "mm"),
     legend.key.spacing.y = unit(0, "mm"),
     legend.key.size = unit(4, "mm")
   )
 
+euk_wpca
+
+# save as png
 ggsave(
-  "output/eukaryotes.png",
-  euk_nmds,
+  "output/eukaryotes_wpca.png",
+  euk_wpca,
   width = 16.5,
-  height = 5,
+  height = 16,
+  units = "cm",
+  dpi = 600
+)
+
+# Save as vector graphic, minor adaptions for better readability with Inkscape
+ggsave(
+  "output/eukaryotes_wpca.svg",
+  euk_wpca,
+  device = "svg",
+  width = 16.5,
+  height = 16,
   units = "cm",
   dpi = 600
 )
 ```
 
 ## SIMPER
-```{r}
-euk_simper <- 
+```{r, warning=FALSE, message=FALSE}
+# SIMPER on phylum basis
+euk_simper_phylum <- 
 eukaryotes_long %>%
-  dplyr::filter(day == 14) %>%
-  dplyr::group_by(exp, day) %>% 
+  dplyr::group_by(exp) %>% 
   tidyr::nest() %>%
   dplyr::mutate(
     simper_data = purrr::map(
-      data, simper_summary, tax_level = "class"
+      data, function(x) {
+        df_for_simper <-
+          x %>%
+          dplyr::bind_rows(x)
+        simper_summary(df_for_simper, tax_level = "phylum")
+      }
     )
   ) %>%
   tidyr::unnest(simper_data) %>%
   dplyr::mutate(
-    media = ifelse(exp %in% c(1, 3), "Borgmann", "Kuhl"),
-    season = ifelse(exp %in% c(1, 4), "Winter", "Summer"),
+    media = ifelse(exp %in% c(1, 3), "Low", "High"),
+    season = ifelse(exp %in% c(1, 2), "Winter", "Summer"),
   ) %>%
-  ggplot(aes(y = weighted_rel_change, x = class)) +
+  ggplot(aes(y = weighted_rel_change, x = phylum)) +
+  geom_segment(
+    mapping = aes(
+      color = factor(concentration_ug_L),
+      yend = 1
+      ),
+    linewidth = 1.25,
+    position = position_dodge(0.75),
+    size = 1.8
+  ) +
+  geom_hline(yintercept = 1, linewidth = 0.3, color = "#000000") +
+  scale_color_manual(values = colors, guide = "none") +
+  scale_fill_manual(values = colors, guide = "none") +
+  scale_y_continuous(
+    transform = scales::pseudo_log_trans(sigma = 1/128),
+    breaks = c(1/256, 1/64, 1/16, 1/4, 1, 4, 16, 64, 256),
+    labels = c("1/256","1/64","1/16", "1/4", "1", "4", "16", "64", "256")
+  ) +
+  coord_flip(
+    ylim = c(1/256, 256)
+  ) +
+  ggh4x::facet_nested_wrap(
+    ~season + stringr::str_to_title(media), 
+    scales = "free_y",
+    strip.position = "right",
+    ncol = 1
+  ) +
+  labs(
+    x = NULL, y = "Fold change"
+  ) +
+  theme_bw() +
+  theme(
+    text = element_text(size = 9),
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+    panel.grid.major = element_line(linewidth = 0.1, color = "#cccccc"),
+    panel.grid.minor = element_line(linewidth = 0.05, color = "#cccccc"),
+    axis.text.y = ggtext::element_markdown(),
+    strip.text.y = element_blank(),
+    strip.background.y = element_blank(),
+    legend.position = "bottom"
+  )
+
+
+euk_simper_phylum | euk_wpca
+
+# Save as vector graphic, minor adaptions for better readability with Inkscape
+ggsave(
+  "output/eukaryotes_both_phylum_level.svg",
+  euk_simper_phylum | euk_wpca,
+  device = "svg",
+  width = 16.5,
+  height = 16,
+  units = "cm",
+  dpi = 600
+)
+
+# SIMPER on family basis
+euk_simper_family <- 
+eukaryotes_long %>%
+  dplyr::group_by(exp) %>% 
+  tidyr::nest() %>%
+  dplyr::mutate(
+    simper_data = purrr::map(
+      data, function(x) {
+        df_for_simper <-
+          x %>%
+          dplyr::bind_rows(x)
+        simper_summary(df_for_simper, tax_level = "family")
+      }
+    )
+  ) %>%
+  tidyr::unnest(simper_data) %>%
+  dplyr::mutate(
+    media = ifelse(exp %in% c(1, 3), "Low", "High"),
+    season = ifelse(exp %in% c(1, 2), "Winter", "Summer"),
+  ) %>%
+  ggplot(aes(y = weighted_rel_change, x = family)) +
   geom_segment(
     mapping = aes(
       color = factor(concentration_ug_L),
@@ -742,10 +1290,7 @@ eukaryotes_long %>%
   scale_y_continuous(
     transform = scales::pseudo_log_trans(sigma = 1/128),
     breaks = c(1/64, 1/16, 1/4, 1, 4, 16, 64),
-    labels = c("<b style = 'font-size: 8px'><sup>1</sup>&frasl;<sub>64</sub></b>",
-               "<b style = 'font-size: 8px'><sup>1</sup>&frasl;<sub>16</sub></b>",
-               "<b style = 'font-size: 8px'><sup>1</sup>&frasl;<sub>4</sub></b>",
-               "1", "4", "16", "64")
+    labels = c("1/64","1/16", "1/4", "1", "4", "16", "64")
   ) +
   coord_flip(
     ylim = c(1/64, 64)
@@ -761,29 +1306,202 @@ eukaryotes_long %>%
   ) +
   theme_bw() +
   theme(
-    text = element_text(size = 8),
+    text = element_text(size = 9),
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
     panel.grid.major = element_line(linewidth = 0.1, color = "#cccccc"),
     panel.grid.minor = element_line(linewidth = 0.05, color = "#cccccc"),
     axis.text.y = ggtext::element_markdown(),
-    axis.text.x = ggtext::element_markdown(),
     strip.text.y = element_blank(),
     strip.background.y = element_blank(),
     legend.position = "bottom"
   )
 
-euk_simper | euk_nmds
+euk_simper_family | euk_wpca
+
+# Save as vector graphic, minor adaptions for better readability with Inkscape
+ggsave(
+  "output/eukaryotes_both_family_level.svg",
+  euk_simper_family | euk_wpca,
+  device = "svg",
+  width = 16.5,
+  height = 16,
+  units = "cm",
+  dpi = 600
+)
+
+```
+
+## Diversity indices 
+```{r, warning=FALSE, message=FALSE}
+# Diversity indices
+eukaryotes_long %>%
+  dplyr::group_by(exp, concentration_ug_L) %>%
+  dplyr::summarise(
+    shannon = vegan::diversity(RA),
+    simpson = vegan::diversity(RA, index = "simpson"),
+    richness = sum(RA > 0),
+    evenness = shannon / log(richness)
+  ) %>%
+  print(n=50)
+
+# Process the main dataset 
+euk_diversity <- eukaryotes_long %>%
+  dplyr::group_by(exp, concentration_ug_L) %>%
+  dplyr::summarise(
+    shannon = vegan::diversity(RA),
+    simpson = vegan::diversity(RA, index = "simpson"),
+    richness = sum(RA > 0),
+    evenness = shannon / log(richness),
+    .groups = "drop"
+  ) %>%
+  tidyr::pivot_longer(c(shannon, simpson, richness, evenness)) %>%
+  dplyr::mutate(
+    name = stringr::str_to_title(name),
+    exp = factor(exp, levels = c("4", "3", "2", "1"))
+  )
+
+
+# Plot 
+euk_diversity_indices <-
+  ggplot() +
+  geom_line(data = euk_diversity, aes(concentration_ug_L, value, color = name)) +
+  stat_smooth(data = euk_diversity, aes(concentration_ug_L, value, color = name), method = "lm", se = TRUE) +
+  scale_x_continuous(
+    trans = scales::pseudo_log_trans(),
+    breaks = c(0, 1, 10, 100, 1000, 10000),
+    labels = c("0", "1", "10", "100", "1000", "10000")  
+  ) +
+
+  facet_grid(name ~ exp, scales = "free", labeller = labeller(exp = exp_labels)) +
+
+  labs(
+    y = NULL,
+    x = expression("Concentration (" * µg ~ L^-1 * ")"),
+    shape = "Chemical"
+  ) +
+
+  theme(
+    legend.position = "none",
+    panel.grid.minor.x = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1) 
+  )
+
+
+euk_diversity_indices
 
 ggsave(
-  "output/eukaryotes_both.png",
-  euk_simper | euk_nmds +
-    patchwork::plot_layout(
-      guides = "collect"
-    ) &
-    theme(
-      legend.position = "bottom",
-      legend.margin = margin(),
-      legend.spacing = unit(0, "mm")
-      ),
+  "output/eukaryotes_diversity_indices.png",
+  euk_diversity_indices,
+  width = 16.5,
+  height = 16,
+  units = "cm",
+  dpi = 600
+)
+
+# Save as vector graphic, minor adaptions for better readability with Inkscape
+ggsave(
+  "output/eukaryotes_diversity_indices.svg",
+  euk_diversity_indices,
+  device = "svg",
+  width = 16.5,
+  height = 16,
+  units = "cm",
+  dpi = 600
+)
+
+```
+
+## Stacked bar plots
+```{r, warning=FALSE}
+# Stacked bar plot
+# Renaming for plot
+eukaryotes_long <- eukaryotes_long %>%
+  mutate(exp = factor(exp, 
+                      levels = c(1, 2, 3, 4), 
+                      labels = c("Winter Low-Nutrient", 
+                                 "Winter High-Nutrient", 
+                                 "Summer Low-Nutrient",
+                                 "Summer High-Nutrient")))
+
+eukaryotes_long <- eukaryotes_long %>%
+  mutate(
+    sample = factor(sample, levels = unique(sample)),  
+    concentration_ug_L = factor(concentration_ug_L, levels = c("0", "1", "10", "100", "1000", "10000"))  
+  )
+
+sample_to_concentration <- setNames(eukaryotes_long$concentration_ug_L, eukaryotes_long$sample)
+
+euk_barplot_phylum <- eukaryotes_long %>%
+  ggplot(aes(x = sample, y = RA, fill = phylum)) +
+  geom_bar(stat = "identity") +
+  labs(x = "Sample", y = "Abundance", fill = "Phylum") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_manual(values = custom_palette) +
+  facet_wrap(~exp, ncol = 2, scales = "free_x") + 
+  scale_x_discrete(labels = function(x) {
+    concentration_mapping <- setNames(eukaryotes_long$concentration_ug_L, eukaryotes_long$sample)
+    concentration_mapping[x]  
+  })
+  
+
+euk_barplot_phylum
+
+ggsave(
+  "output/euk_barplot_phylum.png",
+  euk_barplot_phylum,
+  width = 16.5,
+  height = 16,
+  units = "cm",
+  dpi = 600,
+  bg = "white" 
+)
+
+# Save as vector graphic, minor adaptions for better readability with Inkscape
+ggsave(
+  "output/euk_barplot_phylum.svg",
+  euk_barplot_phylum,
+  device = "svg",
+  width = 16.5,
+  height = 16,
+  units = "cm",
+  dpi = 600
+)
+
+# Barplot with chlorophyta family
+euk_barplot_chlorophyta <- eukaryotes_long %>%
+  dplyr::filter(phylum == "Chlorophyta") %>%
+  dplyr::filter(!is.na(RA) & !is.na(family)) %>%  
+  ggplot(aes(x = sample, y = RA, fill = family)) +
+  geom_bar(stat = "identity") +
+  labs(x = "Sample", y = "Abundance", fill = "Family") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_manual(values = custom_palette) +
+  facet_wrap(~exp, ncol = 2, scales = "free_x") + 
+  scale_x_discrete(labels = function(x) {
+    concentration_mapping <- setNames(eukaryotes_long$concentration_ug_L, eukaryotes_long$sample)
+    concentration_mapping[x]  
+  })
+  
+euk_barplot_chlorophyta
+
+ggsave(
+  "output/euk_barplot_chlorophyta.png",
+  euk_barplot_chlorophyta,
+  width = 16.5,
+  height = 16,
+  units = "cm",
+  dpi = 600,
+  bg = "white" 
+)
+
+# Save as vector graphic, minor adaptions for better readability with Inkscape
+ggsave(
+  "output/euk_barplot_chlorophyta.svg",
+  euk_barplot_chlorophyta,
+  device = "svg",
   width = 16.5,
   height = 16,
   units = "cm",
@@ -791,246 +1509,117 @@ ggsave(
 )
 ```
 
-```{r}
-eukaryotes_long %>%
-  dplyr::filter(day == 14) %>%
-  dplyr::group_by(exp, day, concentration_ug_L) %>%
+
+## Eukaryotes field
+```{r, warning=FALSE}
+# Extract ASVs with too less findings
+rows_to_keep <-
+eukaryotes_field %>% 
+  dplyr::select_if(is.numeric) %>%
+  rowSums() > 5
+
+# Percentage removed by omitting row sums smaller or equal to 5
+paste(round(100 * (1 - sum(rows_to_keep) / nrow(eukaryotes_field)), 2), "%")
+
+eukaryotes_field <- eukaryotes_field[rows_to_keep, ]
+
+# Add taxonomny in columns
+eukaryotes_field_long <-
+  eukaryotes_field %>%
+  tidyr::separate(
+    taxonomy_eukaryotes,
+    into = tax_ranks_euk,
+    sep = ","
+  ) %>%
+  dplyr::mutate(
+    dplyr::across(
+      dplyr::any_of(tax_ranks_euk),
+      ~stringr::str_remove(.x, ".*:")
+    )
+  ) %>%
+  tidyr::pivot_longer(
+    cols = dplyr::starts_with("E", ignore.case = FALSE),
+    values_to = "reads",
+    names_to = "sample"
+  )
+
+# Relative Abundance
+eukaryotes_field_long <-
+  eukaryotes_field_long %>%
+  dplyr::mutate(
+    RA = reads / sum(reads),
+    .after = reads,
+    .by = sample
+    )
+
+# Stacked bar plot - phylum level
+euk_field_barplot_phylum <- eukaryotes_field_long %>%
+  ggplot(aes(x = sample, y = RA, fill = phylum)) +
+  geom_bar(stat = "identity") +
+  labs(x = NULL, y = "Abundance", fill = "Phylum") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_manual(values = custom_palette) +
+  scale_x_discrete(labels = c("E13" = "Winter", "E36" = "Summer"))
+
+
+euk_field_barplot_phylum
+
+ggsave(
+  "output/eukaryotes_field_phylum.png",
+  euk_field_barplot_phylum,
+  width = 16.5,
+  height = 16,
+  units = "cm",
+  dpi = 600,
+  bg = "white" 
+)
+
+# Save as vector graphic, minor adaptions for better readability with Inkscape
+ggsave(
+  "output/eukaryotes_field_phylum.svg",
+  euk_field_barplot_phylum,
+  device = "svg",
+  width = 16.5,
+  height = 16,
+  units = "cm",
+  dpi = 600
+)
+
+# Diversity indices
+eukaryotes_field_long %>%
+  dplyr::group_by(sample) %>%
   dplyr::summarise(
     shannon = vegan::diversity(RA),
     simpson = vegan::diversity(RA, index = "simpson"),
     richness = sum(RA > 0),
     evenness = shannon / log(richness)
-  ) %>%
-  tidyr::pivot_longer(
-    c(shannon, simpson, richness, evenness)
-  ) %>% 
-  ggplot(aes(concentration_ug_L, value, color = name)) +
-  geom_line() +
-  stat_smooth(method = "lm") +
-  scale_x_continuous(
-    transform = scales::pseudo_log_trans(),
-    breaks = c(0, 10^(0:4))
-  ) +
-  facet_grid(name~exp+day, scales = "free")
-```
-
-## Effects within each experiment?
-## NMDS experiment 1:
-```{r}
-# pro_exp1 <- prokaryotes_long %>%
-#   dplyr::filter(exp == 1)
-# 
-# # pristine rauswerfen
-# pro_exp1 <- pro_exp1 %>%
-#   filter(!(chemical %in% c("pristine")))
-# 
-# # hier jetzt viele ASVs mit überall 0 - Werten --> rauswerfen dann für einzelne Versuche?
-# pro_exp1_filtered <- pro_exp1[, colSums(pro_exp1 != 0) > 0]
-# # von 13796 ASVs auf 1782 reduziert
-# 
-# # calculate relative abundance
-# # first change character to numeric:
-# pro_exp1_filtered <- pro_exp1_filtered %>%
-#   mutate(across(starts_with("ASV"), as.numeric))
-# 
-# 
-# pro_exp1_filtered <- pro_exp1_filtered %>%
-#   rowwise() %>%
-#   mutate(
-#     total_abundance = sum(c_across(starts_with("ASV"))),  # Calculate total abundance per sample
-#     across(starts_with("ASV"), ~ .x / total_abundance, .names = "rel_{col}") # Calculate relative abundance
-#   ) %>%
-#   ungroup()
-# 
-# # delete AVS columns and keep relative abundances:
-# pro_exp1_filtered <- pro_exp1_filtered %>%
-#   dplyr::select(-starts_with("ASV"))
-# 
-# # delete first 7 columns for metaMDS
-# pro_exp1_filtered <- pro_exp1_filtered[, -c(1, 2, 3, 4, 5, 6, 7)]
-# 
-# # The Hellinger transformation reduces the impact of large abundances while emphasizing relative differences.
-# 
-# # metaMDS
-# NMDS_pro_exp1 <-
-#   metaMDS(
-#     pro_exp1_filtered,
-#     autotransform = FALSE,
-#     k = 2 ,
-#     distance = "bray",
-#     na.rm = TRUE
-#   )
-# 
-# NMDS_pro_exp1$stress
-# 
-# # exctract NMDS scores
-# nmds_scores_exp1 <- as.data.frame(scores(NMDS_pro_exp1, display = "sites"))
-# 
-# # delete pristine from prokaryotes_sample_info
-# prokaryotes_sample_info <- prokaryotes_sample_info %>%
-#   filter(!(chemical %in% c("pristine")))
-# 
-# # add treatment column to NMDS scores
-# Day            <- prokaryotes_sample_info $ day[prokaryotes_sample_info $ exp == "1"]
-# Treatments     <- prokaryotes_sample_info $ chemical[prokaryotes_sample_info $ exp == "1"]
-# Concentration  <- prokaryotes_sample_info $ concentration_ug_L[prokaryotes_sample_info $ exp == "1"]
-# 
-# nmds_scores_exp1 $ Treatment = Treatments
-# nmds_scores_exp1 $ Day = Day
-# nmds_scores_exp1 $ Concentration = Concentration
-# 
-# 
-# # For the plot: reorder treatment variable in data.scores_snail_absolute
-# nmds_scores_exp1 $ Treatment <- factor(
-#   nmds_scores_exp1 $ Treatment,
-#   levels = c("control", "ciprofloxacin", "diuron", "pristine")
-# )
-# 
-# 
-# NMDS_pro_exp1_plot <- ggplot(data = nmds_scores_exp1, aes(x = NMDS1, y = NMDS2)) +
-#   geom_point(
-#         aes(shape = Treatment, color = Treatment),
-#     size = 5,
-#     alpha = 1,
-#     show.legend = TRUE
-#   )
-# 
-# NMDS_pro_exp1_plot
-```
-
-## NMDS experiment 2:
-```{r}
-# pro_exp2 <- prokaryotes %>%
-#   filter(!(exp %in% c(1, 3, 4))) 
-# 
-# pro_exp2 <- pro_exp2[, -c(1, 2, 3, 4, 5, 6)]
-# 
-# # numeric values
-# pro_exp2 <- pro_exp2 %>%
-#   mutate(across(everything(), as.numeric))
-# 
-# NMDS_pro_exp2 <-
-#   metaMDS(
-#     pro_exp2,
-#     autotransform = FALSE,
-#     k = 2 ,
-#     distance = "bray",
-#     na.rm = TRUE
-#   )
-# 
-# NMDS_pro_exp2$stress
-# 
-# # exctract NMDS scores
-# nmds_scores_exp2 <- as.data.frame(scores(NMDS_pro_exp2, display = "sites"))
-# 
-# # add treatment column to NMDS scores
-# Day        <- prokaryotes_sample_info $ day[prokaryotes_sample_info $ exp == "2"]
-# Treatments <- prokaryotes_sample_info $ chemical[prokaryotes_sample_info $ exp == "2"]
-# Concentration <- prokaryotes_sample_info $ concentration_ug_L[prokaryotes_sample_info $ exp == "2"]
-# 
-# nmds_scores_exp2 $ Treatment = Treatments
-# nmds_scores_exp2 $ Day = Day
-# nmds_scores_exp2 $ Concentration = Concentration
-# 
-# 
-# # For the plot: reorder treatment variable in data.scores_snail_absolute
-# nmds_scores_exp2 $ Treatment <- factor(
-#   nmds_scores_exp2 $ Treatment,
-#   levels = c("control", "diuron", "pristine", "propyzamide")
-# )
-# 
-# 
-# NMDS_pro_exp2_plot <- ggplot(data = subset(nmds_scores_exp2, Treatment != "pristine"), 
-#                              aes(x = NMDS1, y = NMDS2)) +
-#   geom_point(
-#     aes(shape = Treatment, color = Treatment),
-#     size = 5,
-#     alpha = 1,
-#     show.legend = TRUE
-#   )
-# 
-# 
-# NMDS_pro_exp2_plot
-```
-
-## NMDS experiment 3:
-```{r}
-# pro_exp3 <- prokaryotes %>%
-#   filter(!(exp %in% c(1, 2, 4))) 
-# 
-# pro_exp3 <- pro_exp3[, -c(1, 2, 3, 4, 5, 6)]
-# 
-# # numeric values
-# pro_exp3 <- pro_exp3 %>%
-#   mutate(across(everything(), as.numeric))
-# 
-# NMDS_pro_exp3 <-
-#   metaMDS(
-#     pro_exp3,
-#     autotransform = FALSE,
-#     k = 2 ,
-#     distance = "bray",
-#     na.rm = TRUE
-#   )
-# 
-# NMDS_pro_exp3$stress
-# 
-# # exctract NMDS scores
-# nmds_scores_exp3 <- as.data.frame(scores(NMDS_pro_exp3, display = "sites"))
-# 
-# # add treatment column to NMDS scores
-# Day        <- prokaryotes_sample_info $ day[prokaryotes_sample_info $ exp == "3"]
-# Treatments <- prokaryotes_sample_info $ chemical[prokaryotes_sample_info $ exp == "3"]
-# Concentration <- prokaryotes_sample_info $ concentration_ug_L[prokaryotes_sample_info $ exp == "3"]
-# 
-# nmds_scores_exp3 $ Treatment = Treatments
-# nmds_scores_exp3 $ Day = Day
-# nmds_scores_exp3 $ Concentration = Concentration
-# 
-# 
-# # For the plot: reorder treatment variable in data.scores_snail_absolute
-# nmds_scores_exp3 $ Treatment <- factor(
-#   nmds_scores_exp3 $ Treatment,
-#   levels = c("control", "diuron", "pristine", "propyzamide")
-# )
-# 
-# 
-# NMDS_pro_exp3_plot <- ggplot(data = subset(nmds_scores_exp3, Treatment != "pristine"), 
-#                              aes(x = NMDS1, y = NMDS2)) +
-#   geom_point(
-#     aes(shape = Treatment, color = Treatment),
-#     size = 5,
-#     alpha = 1,
-#     show.legend = TRUE
-#   )
-# 
-# 
-# NMDS_pro_exp3_plot
+  ) 
 ```
 
 
+# Chemical analyses
+```{r, warning=FALSE}
+chemical_analyses <-
+  read.table("data/chemical_analyses.txt",
+             header = TRUE, sep = "\t") %>%
+  tibble::tibble()
 
+# One contamination in exp 1 negative control, 3 days later measured concentration again <LOQ. 
+chemical_analyses <- chemical_analyses %>%   
+  dplyr::filter(treatment != "negative_control") 
+  
 
+chemical_analyses$measured_concentration_ug_L <-
+  as.numeric(chemical_analyses$measured_concentration_ug_L)
 
-
-
-
-
-
-
-
-
-
-# Eukaryotes
-
-Load data
-```{r}
-# ASV_eukaryotes <- 
-#   read.xlsx(file.path(prj, "data", "ASV_eukaryotes.xlsx"),
-#             colNames = TRUE, rowNames = TRUE)
-# 
-# View(ASV_eukaryotes)
-# colnames(ASV_eukaryotes)
+# Compute mean measured concentrations for the respective experiments
+mean_concentrations <-
+chemical_analyses %>%
+  dplyr::filter(exp %in% c("1", "2", "3", "4"), 
+                nominal_concentration_ug_L %in% c("10", "1000", "10000")) %>%
+  dplyr::group_by(exp, treatment, nominal_concentration_ug_L) %>%
+  dplyr::summarise(mean = mean(measured_concentration_ug_L, na.rm = TRUE), .groups = "drop")
 
 ```
 

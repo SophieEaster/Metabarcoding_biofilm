@@ -31,6 +31,8 @@ library("emmeans")
 library("purrr")
 library("DT")
 library("openxlsx")
+library("svglite")
+
 
 theme_set(
   theme_bw() +
@@ -53,20 +55,9 @@ theme_set(
 
 
 wcmd_and_adonis <- function(df, distance = "bray", exponent = 0.5) {
-  asvs_to_remove <-
-    df %>%
-    dplyr::group_by(asv) %>%
-    dplyr::summarise(
-      total_reads = sum(reads)
-    ) %>% 
-    dplyr::filter(total_reads <= 5) %>%
-    dplyr::pull(asv)
   
   df_wide <- 
     df %>%
-    dplyr::filter(
-      !asv %in% asvs_to_remove
-    ) %>%
     dplyr::mutate(
       present = as.numeric(reads > 0)
     ) %>%
@@ -93,12 +84,11 @@ wcmd_and_adonis <- function(df, distance = "bray", exponent = 0.5) {
   
   colnames(wcmd) <- c("WCMD1", "WCMD2")
   
-  remove_diuron <- env$chemical != "diuron"
   
   permanova <-
     adonis2(
-      species[remove_diuron,]^exponent ~ concentration_ug_L,
-      data = env[remove_diuron,],
+      species^exponent ~ concentration_ug_L,
+      data = env,
       method = distance,
       by = "terms",
       permutations = 9999
@@ -118,22 +108,8 @@ simper_summary <- function(
     tax_level = "phylum",
     n_taxa = 5
 ) {
-  asvs_to_remove <-
-    df %>%
-    dplyr::filter(chemical != "diuron") %>%
-    dplyr::group_by(asv) %>%
-    dplyr::summarise(
-      total_reads = sum(reads)
-    ) %>% 
-    dplyr::filter(total_reads <= 5) %>%
-    dplyr::pull(asv)
-  
   simper_df <-
     df %>%
-    dplyr::filter(chemical != "diuron") %>%
-    dplyr::filter(
-      !asv %in% asvs_to_remove
-    ) %>%
     replace(is.na(.), "Unassigned") %>%
     dplyr::arrange(concentration_ug_L)
   
@@ -142,20 +118,21 @@ simper_summary <- function(
     dplyr::select(
       dplyr::any_of(c("asv", "exp", "media", "chemical", "concentration_ug_L", "day", resp))
     ) %>%
-    tidyr::pivot_wider(names_from = asv, values_from = !!sym(resp))
+    tidyr::pivot_wider(names_from = asv, values_from = !!sym(resp)) %>%
+    tidyr::unnest()
   
   species <-
     asvs_wide %>%
-    dplyr::select(-c(1:5))
+    dplyr::select(dplyr::starts_with("ASV"))
   
   groups <-
     asvs_wide %>%
-    dplyr::select(1:5)
+    dplyr::select(!dplyr::starts_with("ASV"))
   
   # see simper documentation for meaning of columns
   simper_object <-
     vegan::simper(
-      species^exponent,
+      species,
       groups$concentration_ug_L
     )
   
@@ -190,7 +167,6 @@ simper_summary <- function(
   
   plt_data <-
     simper_df %>%
-    dplyr::filter(chemical != "diuron") %>%
     dplyr::left_join(df_simper, by = "asv") %>%
     dplyr::filter(
       !!sym(tax_level) %in% simper_names[n_taxa:1]
