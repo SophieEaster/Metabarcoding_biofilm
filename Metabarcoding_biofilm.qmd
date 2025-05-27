@@ -10,9 +10,9 @@ editor_options:
   chunk_output_type: console
 ---
 
-# Functional stability despite structural changes in freshwater biofilm communities exposed to an antibiotic and an herbicide – the role of nutrient levels and season 
+# Functional stability despite structural changes in freshwater biofilm communities exposed to an antibiotic and an herbicide - the role of nutrient conditions
 
-Sophie Oster, Eric Bollinger, Tobias Schmitt, Verena C. Schreiner, Sabine Filker, Mirco Bundschuh
+Sophie Oster, Eric Bollinger, Verena C. Schreiner, Tobias Schmitt, Sabine Filker & Mirco Bundschuh
 
 R script written by Eric Bollinger and Sophie Oster\
 
@@ -22,7 +22,7 @@ Fortstrasse 7\
 76829 Landau in der Pfalz\
 GERMANY
 
-Four chronic (14 days) exposure experiments were conducted in an indoor stream microcosm facility with lotic biofilm in the RPTU in Landau, Germany. These studies were conducted with four chemical treatments and two different nutrient media:
+Four independent chronic (14 days) exposure experiments were conducted in an indoor stream microcosm facility with freshwater biofilm in the RPTU in Landau, Germany. These studies were conducted with four chemical treatments and two different nutrient media:
 
 -   treatment/chemical stressor 
 
@@ -112,7 +112,7 @@ df_biofilm <- df_biofilm %>%
 # Test for concentrations
 df_biofilm %>%
   tidyr::pivot_longer(
-    afdw:chlc
+    AFDW:Chlc
   ) %>% 
   tidyr::nest(.by = c(season, media, name)) %>%
   dplyr::mutate(
@@ -132,7 +132,7 @@ df_biofilm %>%
 # Test for media
 df_biofilm %>%
   tidyr::pivot_longer(
-    afdw:chlc
+    AFDW:Chlc
   ) %>% 
   tidyr::nest(.by = c(season, name)) %>%
   dplyr::mutate(
@@ -151,24 +151,36 @@ df_biofilm %>%
 
 
 # Calculate mean afdw, chla, chlb and chlc
-mean_biofilm_endppoints <-
+mean_biofilm_endpoints <-
 df_biofilm %>%
   dplyr::filter(exp %in% c("1", "2", "3", "4"), 
                 media %in% c("Low", "High")) %>%
   dplyr::group_by(exp, treat, media, season) %>%
   dplyr::summarise(
-    mean_afdw = mean(afdw, na.rm = TRUE),
-    mean_chla = mean(chla, na.rm = TRUE),
-    mean_chlb = mean(chlb, na.rm = TRUE),
-    mean_chlc = mean(chlc, na.rm = TRUE),
+    mean_afdw = mean(AFDW, na.rm = TRUE),
+    mean_chla = mean(Chla, na.rm = TRUE),
+    mean_chlb = mean(Chlb, na.rm = TRUE),
+    mean_chlc = mean(Chlc, na.rm = TRUE),
     .groups = "drop"
     )
+
 
 # Plot
 df_biofilm %>%
   tidyr::pivot_longer(
     AFDW:Chlc
   ) %>% 
+  mutate(
+  name = factor(name,
+    levels = c("AFDW", "Chla", "Chlb", "Chlc"),
+    labels = c(
+      "AFDW\n(mg cm⁻²)",
+      "Chla\n(µg cm⁻²)",
+      "Chlb\n(µg cm⁻²)",
+      "Chlc\n(µg cm⁻²)"
+    )
+  )
+)%>% 
   dplyr::mutate(
     season = ifelse(season == "w", "Winter", "Summer"),
     media = stringr::str_to_title(media),
@@ -211,7 +223,9 @@ df_biofilm %>%
     breaks = c(0, 10^(0:4))
   ) +
   scale_y_continuous(
-    breaks = c(0, 2^(-2:5))
+    breaks = c(0, 0.25, 0.5, 1, 2, 4, 8, 16, 32),
+    #breaks = c(0, 2^(-2:5)),
+    labels = function(x) gsub("\\.0+$", "", x)
   ) +
   coord_trans(
     x = scales::pseudo_log_trans(sigma = 0.1),
@@ -772,17 +786,20 @@ sample_to_concentration <- setNames(prokaryotes_long$concentration_ug_L, prokary
 
 
 prok_barplot_phylum <- prokaryotes_long %>%
+  group_by(sample, phylum, exp) %>%
+  summarise(RA = sum(RA), .groups = "drop") %>%
   ggplot(aes(x = sample, y = RA, fill = phylum)) +
   geom_bar(stat = "identity") +
   labs(x = "Sample", y = "Abundance", fill = "Phylum") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_fill_manual(values = custom_palette) +
-  facet_wrap(~exp, ncol = 2, scales = "free_x") + 
+  facet_wrap(~exp, ncol = 2, scales = "free_x") +
   scale_x_discrete(labels = function(x) {
     concentration_mapping <- setNames(prokaryotes_long$concentration_ug_L, prokaryotes_long$sample)
     concentration_mapping[x]  
   })
+
   
 prok_barplot_phylum
 
@@ -809,20 +826,36 @@ ggsave(
 
 
 # Barplot for Proteobacteria family
+# plot only top 6 families across all data (not just per sample) for better overview
+top_families_prokaryotes <- prokaryotes_long %>%
+  filter(phylum == "Proteobacteria") %>%
+  group_by(family) %>%
+  summarise(total_RA = sum(RA, na.rm = TRUE)) %>%
+  top_n(6, total_RA) %>%
+  pull(family)
+
+
 prok_barplot_proteobacteria <- prokaryotes_long %>%
-  dplyr::filter(phylum == "Proteobacteria") %>%
-  ggplot(aes(x = sample, y = RA, fill = family)) +
+  filter(phylum == "Proteobacteria") %>%
+  mutate(family = ifelse(family %in% top_families_prokaryotes, family, "Other"))  %>%
+  group_by(sample, family, exp) %>%
+  summarise(RA = sum(RA, na.rm = TRUE), .groups = "drop") %>%
+  group_by(sample, exp) %>%
+  mutate(RA_normalized = RA / sum(RA)) %>%
+  ungroup() %>%
+  ggplot(aes(x = sample, y = RA_normalized, fill = family)) +
   geom_bar(stat = "identity") +
-  labs(x = "Sample", y = "Abundance", fill = "Family") +
+  labs(x = "Sample", y = "Relative Abundance (normalized)", fill = "Family") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_fill_manual(values = custom_palette) +
-  facet_wrap(~exp, ncol = 2, scales = "free_x") + 
+  facet_wrap(~exp, ncol = 2, scales = "free_x") +
   scale_x_discrete(labels = function(x) {
     concentration_mapping <- setNames(prokaryotes_long$concentration_ug_L, prokaryotes_long$sample)
-    concentration_mapping[x]  
+    concentration_mapping[x]
   })
-  
+
+
 
 prok_barplot_proteobacteria
 
@@ -894,7 +927,19 @@ prokaryotes_field_long <-
     )
 
 # Stacked bar plot - phylum level
+# only 6 most abundant phyla
+top_phyla_prok_field <- prokaryotes_field_long %>%
+  group_by(phylum) %>%
+  summarise(total_RA = sum(RA, na.rm = TRUE)) %>%
+  top_n(6, total_RA) %>%
+  pull(phylum)
+
+
 prok_field_barplot_phylum <- prokaryotes_field_long %>%
+  mutate(phylum = ifelse(phylum %in% top_phyla_prok_field, phylum, "Other")) %>%
+  group_by(sample, phylum) %>%
+  summarise(RA = sum(RA, na.rm = TRUE), .groups = "drop") %>%
+  mutate(phylum = factor(phylum, levels = c(top_phyla_prok_field, "Other"))) %>%
   ggplot(aes(x = sample, y = RA, fill = phylum)) +
   geom_bar(stat = "identity") +
   labs(x = NULL, y = "Abundance", fill = "Phylum") +
@@ -902,6 +947,7 @@ prok_field_barplot_phylum <- prokaryotes_field_long %>%
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_fill_manual(values = custom_palette) +
   scale_x_discrete(labels = c("P13" = "Winter", "P36" = "Summer"))
+
 
 prok_field_barplot_phylum
 
@@ -1431,6 +1477,8 @@ eukaryotes_long <- eukaryotes_long %>%
 sample_to_concentration <- setNames(eukaryotes_long$concentration_ug_L, eukaryotes_long$sample)
 
 euk_barplot_phylum <- eukaryotes_long %>%
+  group_by(sample, phylum, exp) %>%
+  summarise(RA = sum(RA), .groups = "drop") %>%
   ggplot(aes(x = sample, y = RA, fill = phylum)) +
   geom_bar(stat = "identity") +
   labs(x = "Sample", y = "Abundance", fill = "Phylum") +
@@ -1469,11 +1517,16 @@ ggsave(
 
 # Barplot with chlorophyta family
 euk_barplot_chlorophyta <- eukaryotes_long %>%
-  dplyr::filter(phylum == "Chlorophyta") %>%
-  dplyr::filter(!is.na(RA) & !is.na(family)) %>%  
-  ggplot(aes(x = sample, y = RA, fill = family)) +
+  filter(phylum == "Chlorophyta") %>%
+  filter(!is.na(RA) & !is.na(family)) %>%
+  group_by(sample, family, exp) %>%
+  summarise(RA = sum(RA, na.rm = TRUE), .groups = "drop") %>%
+  group_by(sample, exp) %>%
+  mutate(RA_normalized = RA / sum(RA, na.rm = TRUE)) %>%
+  ungroup() %>%
+  ggplot(aes(x = sample, y = RA_normalized, fill = family)) +
   geom_bar(stat = "identity") +
-  labs(x = "Sample", y = "Abundance", fill = "Family") +
+  labs(x = "Sample", y = "Relative Abundance (normalized)", fill = "Family") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_fill_manual(values = custom_palette) +
@@ -1482,6 +1535,7 @@ euk_barplot_chlorophyta <- eukaryotes_long %>%
     concentration_mapping <- setNames(eukaryotes_long$concentration_ug_L, eukaryotes_long$sample)
     concentration_mapping[x]  
   })
+
   
 euk_barplot_chlorophyta
 
@@ -1552,6 +1606,8 @@ eukaryotes_field_long <-
 
 # Stacked bar plot - phylum level
 euk_field_barplot_phylum <- eukaryotes_field_long %>%
+  group_by(sample, phylum) %>%
+  summarise(RA = sum(RA), .groups = "drop") %>%
   ggplot(aes(x = sample, y = RA, fill = phylum)) +
   geom_bar(stat = "identity") +
   labs(x = NULL, y = "Abundance", fill = "Phylum") +
