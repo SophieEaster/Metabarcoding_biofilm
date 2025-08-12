@@ -80,6 +80,7 @@ R version used for this script: 4.3.2, use the following code chunk to download 
 ```{r, message=FALSE, warning=FALSE}
 # Restore the environment:
 # renv::restore()
+# renv::snapshot()
 
 source("code/00_setup.R")
 ```
@@ -103,8 +104,8 @@ df_biofilm <- df_biofilm %>%
 # Rename media
 df_biofilm <- df_biofilm %>%   
     mutate(media = case_when(
-    media == "borgmann" ~ "Low",
-    media == "kuhl" ~ "High",
+    media == "borgmann" ~ "Low-Nutrient",
+    media == "kuhl" ~ "High-Nutrient",
     TRUE ~ media
   ))
 
@@ -154,7 +155,7 @@ df_biofilm %>%
 mean_biofilm_endpoints <-
 df_biofilm %>%
   dplyr::filter(exp %in% c("1", "2", "3", "4"), 
-                media %in% c("Low", "High")) %>%
+                media %in% c("Low-Nutrient", "High-Nutrient")) %>%
   dplyr::group_by(exp, treat, media, season) %>%
   dplyr::summarise(
     mean_afdw = mean(AFDW, na.rm = TRUE),
@@ -164,6 +165,11 @@ df_biofilm %>%
     .groups = "drop"
     )
 
+# Define custom colors for each concentration
+conc_levels <- levels(factor(df_biofilm$concentration))
+conc_colors <- scico::scico(length(conc_levels), end = 0.8, palette = "batlow")
+names(conc_colors) <- conc_levels
+conc_colors["0"] <- "grey60" 
 
 # Plot
 df_biofilm %>%
@@ -235,7 +241,7 @@ df_biofilm %>%
     y = NULL,
     x = expression("Concentration (" * µg ~ L^-1 * ")")
   ) +
-  scico::scale_color_scico_d(end = 0.8, palette = "batlow", guide = "none") +
+  scale_color_manual(values = conc_colors, guide = "none") +
   ggh4x::facet_nested(
     name ~ facet_label + media,
     scales = "free"
@@ -251,7 +257,6 @@ df_biofilm %>%
     axis.ticks.x = element_line(),
     axis.ticks.y = element_line()
 )
-
 
 # Save the plot
 ggsave(
@@ -360,8 +365,8 @@ prokaryotes_long <-
 # Rename media
 prokaryotes_long <- prokaryotes_long %>%
     mutate(media = case_when(
-    media == "borgmann" ~ "Low",
-    media == "kuhl" ~ "High",
+    media == "borgmann" ~ "Low-Nutrient",
+    media == "kuhl" ~ "High-Nutrient",
     TRUE ~ media
   ))
 
@@ -413,7 +418,8 @@ conc_fac <- levels(factor(prok_analyzed$concentration_ug_L))
 colors <- 
   scico::scico(length(conc_fac), end = 0.8, palette = "batlow") %>%
   colorspace::lighten(0.2)
-names(colors) <- levels(factor(prok_analyzed$concentration_ug_L))
+names(colors) <- conc_fac
+colors["0"] <- "grey60"
 
 # Plot
 prok_wpca <-
@@ -445,13 +451,13 @@ prok_analyzed %>%
     vjust = 0
   ) +
   scale_shape_manual(
-    values = c("Control" = 21, "Ciprofloxacin" = 22, "Propyzamide" = 25)  
+    values = c("Control" = 21, "Ciprofloxacin" = 25, "Propyzamide" = 25)  
   ) +
   scale_fill_manual(values = colors) +
   guides(
     fill = guide_legend(
       ncol = 4,
-      override.aes = list(shape = 21)
+      override.aes = list(shape = 25)
     ),
     shape = guide_legend(
       title = "Chemical",
@@ -506,6 +512,7 @@ ggsave(
   units = "cm",
   dpi = 600
 )
+
 ```
 
 ## SIMPER
@@ -527,7 +534,7 @@ prokaryotes_long %>%
   ) %>%
   tidyr::unnest(simper_data) %>%
   dplyr::mutate(
-    media = ifelse(exp %in% c(1, 3), "Low", "High"),
+    media = ifelse(exp %in% c(1, 3), "Low-Nutrient", "High-Nutrient"),
     season = ifelse(exp %in% c(1, 2), "Winter", "Summer"),
   ) %>%
   ggplot(aes(y = weighted_rel_change, x = phylum)) +
@@ -605,7 +612,7 @@ prokaryotes_long %>%
   ) %>%
   tidyr::unnest(simper_data) %>%
   dplyr::mutate(
-    media = ifelse(exp %in% c(1, 3), "Low", "High"),
+    media = ifelse(exp %in% c(1, 3), "Low-Nutrient", "High-Nutrient"),
     season = ifelse(exp %in% c(1, 2), "Winter", "Summer"),
   ) %>%
   ggplot(aes(y = weighted_rel_change, x = family)) +
@@ -702,6 +709,16 @@ prok_diversity <- prokaryotes_long %>%
     name = stringr::str_to_title(name),
     exp = factor(exp, levels = c("4", "3", "2", "1"))
   )
+
+# statistics
+kruskal_diversity_indices_prok <- prok_diversity %>%
+  group_by(exp, name) %>%
+  nest() %>%
+  mutate(
+    kruskal_p = map_dbl(data, ~ kruskal.test(value ~ concentration_ug_L, data = .x)$p.value)
+  )
+
+print(kruskal_diversity_indices_prok)
 
 
 # Plot 
@@ -1071,8 +1088,8 @@ eukaryotes_long <-
 # Rename media
 eukaryotes_long <- eukaryotes_long %>%   
     mutate(media = case_when(
-    media == "borgmann" ~ "Low",
-    media == "kuhl" ~ "High",
+    media == "borgmann" ~ "Low-Nutrient",
+    media == "kuhl" ~ "High-Nutrient",
     TRUE ~ media
   ))
 
@@ -1123,8 +1140,8 @@ conc_fac <- levels(factor(euk_analyzed$concentration_ug_L))
 colors <- 
   scico::scico(length(conc_fac), end = 0.8, palette = "batlow") %>%
   colorspace::lighten(0.2)
-names(colors) <- levels(factor(euk_analyzed$concentration_ug_L))
-
+names(colors) <- conc_fac
+colors["0"] <- "grey60"
 
 euk_wpca <-
 euk_analyzed %>%
@@ -1155,14 +1172,14 @@ euk_analyzed %>%
     vjust = 0
   ) +
   scale_shape_manual(
-    values = c("Control" = 21, "Ciprofloxacin" = 22, "Propyzamide" = 25)  
+    values = c("Control" = 21, "Ciprofloxacin" = 25, "Propyzamide" = 25)  
   )  +
   scale_fill_manual(values = colors) +
   guides(
     fill = 
       guide_legend(
         ncol = 4,
-        override.aes = list(shape = 21)
+        override.aes = list(shape = 25)
         ),
     shape = 
       guide_legend(
@@ -1239,7 +1256,7 @@ eukaryotes_long %>%
   ) %>%
   tidyr::unnest(simper_data) %>%
   dplyr::mutate(
-    media = ifelse(exp %in% c(1, 3), "Low", "High"),
+    media = ifelse(exp %in% c(1, 3), "Low-Nutrient", "High-Nutrient"),
     season = ifelse(exp %in% c(1, 2), "Winter", "Summer"),
   ) %>%
   ggplot(aes(y = weighted_rel_change, x = phylum)) +
@@ -1404,6 +1421,15 @@ euk_diversity <- eukaryotes_long %>%
     exp = factor(exp, levels = c("4", "3", "2", "1"))
   )
 
+# statistics
+kruskal_diversity_indices_euk <- euk_diversity %>%
+  group_by(exp, name) %>%
+  nest() %>%
+  mutate(
+    kruskal_p = map_dbl(data, ~ kruskal.test(value ~ concentration_ug_L, data = .x)$p.value)
+  )
+
+print(kruskal_diversity_indices_euk)
 
 # Plot 
 euk_diversity_indices <-
