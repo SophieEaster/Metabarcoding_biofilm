@@ -32,6 +32,7 @@ library("purrr")
 library("DT")
 library("openxlsx")
 library("svglite")
+library("scico")
 
 
 theme_set(
@@ -52,11 +53,9 @@ theme_set(
     )
 )
 
-
-
 wcmd_and_adonis <- function(df, distance = "bray", exponent = 0.5) {
-  
-  df_wide <- 
+
+  df_wide <-
     df %>%
     dplyr::mutate(
       present = as.numeric(reads > 0)
@@ -67,24 +66,24 @@ wcmd_and_adonis <- function(df, distance = "bray", exponent = 0.5) {
       names_from = asv
     ) %>%
     dplyr::arrange(concentration_ug_L)
-  
+
   species <-
     df_wide %>%
     dplyr::select(!dplyr::any_of(c("sample", "exp", "media", "chemical", "concentration_ug_L", "day")))
-  
+
   env <-
     df_wide %>%
     dplyr::select(dplyr::any_of(c("sample", "exp", "media", "chemical", "concentration_ug_L", "day")))
-  
-  wcmd <- 
+
+  wcmd <-
     vegan::wcmdscale(
       vegdist(species),
       k = 2
     )
-  
+
   colnames(wcmd) <- c("WCMD1", "WCMD2")
-  
-  
+
+
   permanova <-
     adonis2(
       species^exponent ~ concentration_ug_L,
@@ -93,7 +92,7 @@ wcmd_and_adonis <- function(df, distance = "bray", exponent = 0.5) {
       by = "terms",
       permutations = 9999
     )
-  
+
   list(
     adonis = permanova,
     wcmd = wcmd %>%

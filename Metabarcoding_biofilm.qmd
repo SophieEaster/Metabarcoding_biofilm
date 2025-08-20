@@ -276,6 +276,7 @@ ggsave(
   units = "cm",
   dpi = 600
 )
+
 ```
 
 # Prokaryotes
@@ -385,7 +386,7 @@ missing_percentage_prok_tax
 
 ## Ordination and PERMANOVA
 ```{r, warning=FALSE}
-prok_analyzed <- 
+prok_analyzed <-
 prokaryotes_long %>%
   dplyr::group_by(exp) %>%
   tidyr::nest() %>%
@@ -404,7 +405,7 @@ prokaryotes_long %>%
 
 prok_analyzed$obj[[1]]
 
-prok_analyzed_sign <- 
+prok_analyzed_sign <-
 prok_analyzed %>%
   dplyr::group_by(exp, media) %>%
   dplyr::reframe(
@@ -415,7 +416,7 @@ prok_analyzed %>%
   )
 
 conc_fac <- levels(factor(prok_analyzed$concentration_ug_L))
-colors <- 
+colors <-
   scico::scico(length(conc_fac), end = 0.8, palette = "batlow") %>%
   colorspace::lighten(0.2)
 names(colors) <- conc_fac
@@ -427,8 +428,8 @@ prok_analyzed %>%
   dplyr::mutate(
     season = ifelse(exp %in% c(1, 2), "Winter", "Summer"),
     chemical = factor(
-      stringr::str_to_title(chemical), 
-      levels = c("Control", "Ciprofloxacin", "Propyzamide") 
+      stringr::str_to_title(chemical),
+      levels = c("Control", "Ciprofloxacin", "Propyzamide")
     )
   ) %>%
   ggplot(aes(WCMD1, WCMD2)) +
@@ -436,7 +437,7 @@ prok_analyzed %>%
   geom_hline(yintercept = 0, linetype = 2, linewidth = 0.2, color = "#aaaaaa") +
   geom_point(
     aes(
-      shape = chemical,  
+      shape = chemical,
       fill = factor(concentration_ug_L)
     ),
     size = 3
@@ -451,7 +452,7 @@ prok_analyzed %>%
     vjust = 0
   ) +
   scale_shape_manual(
-    values = c("Control" = 21, "Ciprofloxacin" = 25, "Propyzamide" = 25)  
+    values = c("Control" = 21, "Ciprofloxacin" = 25, "Propyzamide" = 25)
   ) +
   scale_fill_manual(values = colors) +
   guides(
@@ -461,11 +462,11 @@ prok_analyzed %>%
     ),
     shape = guide_legend(
       title = "Chemical",
-      ncol = 1  
+      ncol = 1
     )
   ) +
   ggh4x::facet_nested_wrap(
-    ~season + stringr::str_to_title(media), 
+    ~season + stringr::str_to_title(media),
     ncol = 1,
     strip.position = "right"
   ) +
@@ -489,7 +490,6 @@ prok_analyzed %>%
     legend.key.spacing.y = unit(0, "mm"),
     legend.key.size = unit(4, "mm")
   )
-
 
 prok_wpca
 
@@ -675,7 +675,7 @@ ggsave(
 
 ## Diversity indices
 ```{r, warning=FALSE, message=FALSE}
-# Diversity indices 
+# Diversity indices, only descriptive 
 prokaryotes_long %>%
   dplyr::group_by(exp, concentration_ug_L) %>%
   dplyr::summarise(
@@ -709,16 +709,6 @@ prok_diversity <- prokaryotes_long %>%
     name = stringr::str_to_title(name),
     exp = factor(exp, levels = c("4", "3", "2", "1"))
   )
-
-# statistics
-kruskal_diversity_indices_prok <- prok_diversity %>%
-  group_by(exp, name) %>%
-  nest() %>%
-  mutate(
-    kruskal_p = map_dbl(data, ~ kruskal.test(value ~ concentration_ug_L, data = .x)$p.value)
-  )
-
-print(kruskal_diversity_indices_prok)
 
 
 # Plot 
@@ -1394,7 +1384,7 @@ ggsave(
 
 ## Diversity indices 
 ```{r, warning=FALSE, message=FALSE}
-# Diversity indices
+# Diversity indices, only descriptive 
 eukaryotes_long %>%
   dplyr::group_by(exp, concentration_ug_L) %>%
   dplyr::summarise(
@@ -1421,15 +1411,6 @@ euk_diversity <- eukaryotes_long %>%
     exp = factor(exp, levels = c("4", "3", "2", "1"))
   )
 
-# statistics
-kruskal_diversity_indices_euk <- euk_diversity %>%
-  group_by(exp, name) %>%
-  nest() %>%
-  mutate(
-    kruskal_p = map_dbl(data, ~ kruskal.test(value ~ concentration_ug_L, data = .x)$p.value)
-  )
-
-print(kruskal_diversity_indices_euk)
 
 # Plot 
 euk_diversity_indices <-
@@ -1677,6 +1658,151 @@ eukaryotes_field_long %>%
   ) 
 ```
 
+# Mantel test to test correlation of functional and structural endpoints
+
+## Prokaryotes
+```{r, warning=FALSE}
+# prepare data
+func <- mean_biofilm_endpoints %>%
+  dplyr::select(mean_afdw, mean_chla, mean_chlb, mean_chlc)
+
+func <- cbind(func, prokaryotes_sample_info)
+
+func <- func %>%
+  dplyr::select(-c(exp, media, chemical, day, concentration_ug_L))
+
+func_2 <- func[, -5]
+rownames(func_2) <- func[,5]
+  
+# invert prok ASV table
+prokaryotes_long <- prokaryotes_long %>%
+  dplyr::select(-c(kingdom, genus, class, order, family, species,    exp, media, phylum, reads, chemical, day, concentration_ug_L))
+
+prok_wide <- prokaryotes_long %>%
+    pivot_wider(
+    id_cols = sample,         
+    names_from = asv,        
+    values_from = RA,         
+    values_fill = 0            
+  )
+
+prok_wide <- prok_wide %>%
+  tibble::column_to_rownames("sample") %>%
+  as.matrix()
+
+# Experiment 1
+func_dist_exp1 <- func %>%
+  slice(1:5)
+
+prok_wide_exp1 <- prok_wide[1:5, ]
+
+# Distance matrices
+func_dist_exp1 <- dist(func_dist_exp1, method = "euclidean")
+prok_dist_exp1 <- vegan::vegdist(prok_wide_exp1, method = "bray")
+
+# Mantel test
+set.seed(123)
+
+mantel_result <- vegan::mantel(prok_dist_exp1, func_dist_exp1, method = "spearman", permutations = 999)
+
+print(mantel_result)
+
+# Epx 2
+func_dist_exp2 <- func_2 %>%
+  slice(6:10)
+
+prok_wide_exp2 <- prok_wide[18:22, ]
+
+func_dist_exp2 <- dist(func_dist_exp2, method = "euclidean")
+prok_dist_exp2 <- vegan::vegdist(prok_wide_exp2, method = "bray")
+set.seed(123)
+mantel_result <- vegan::mantel(prok_dist_exp2, func_dist_exp2, method = "spearman", permutations = 999)
+print(mantel_result)
+
+# Exp 3
+func_dist_exp3 <- func_2 %>%
+  slice(11:16)
+
+prok_wide_exp3 <- prok_wide[12:17, ]
+
+func_dist_exp3 <- dist(func_dist_exp3, method = "euclidean")
+prok_dist_exp3 <- vegan::vegdist(prok_wide_exp3, method = "bray")
+set.seed(123)
+mantel_result <- vegan::mantel(prok_dist_exp3, func_dist_exp3, method = "spearman", permutations = 999)
+print(mantel_result)
+
+# Epx 4
+func_dist_exp4 <- func_2 %>%
+  slice(17:22)
+
+prok_wide_exp4 <- prok_wide[6:11, ]
+
+func_dist_exp4 <- dist(func_dist_exp4, method = "euclidean")
+prok_dist_exp4 <- vegan::vegdist(prok_wide_exp4, method = "bray")
+set.seed(123)
+mantel_result <- vegan::mantel(prok_dist_exp4, func_dist_exp4, method = "spearman", permutations = 999)
+print(mantel_result)
+
+# no correlations between functional and structural values for prokaryotes
+```
+
+## Eukaryotes
+```{r, warning=FALSE}
+# invert prok ASV table
+eukaryotes_long <- eukaryotes_long %>%
+  dplyr::select(-c(kingdom, genus, domain, class, order, family, species,    exp, media, phylum, reads, chemical, day, concentration_ug_L))
+
+euk_wide <- eukaryotes_long %>%
+    pivot_wider(
+    id_cols = sample,         
+    names_from = asv,        
+    values_from = RA,         
+    values_fill = 0            
+  )
+
+euk_wide <- euk_wide %>%
+  tibble::column_to_rownames("sample") %>%
+  as.matrix()
+
+# Experiment 1
+euk_wide_exp1 <- euk_wide[1:5, ]
+
+# Distance matrices
+euk_dist_exp1 <- vegan::vegdist(euk_wide_exp1, method = "bray")
+
+# Mantel test
+set.seed(123)
+
+mantel_result <- vegan::mantel(euk_dist_exp1, func_dist_exp1, method = "spearman", permutations = 999)
+
+print(mantel_result)
+
+# Epx 2
+euk_wide_exp2 <- euk_wide[18:22, ]
+
+euk_dist_exp2 <- vegan::vegdist(euk_wide_exp2, method = "bray")
+set.seed(123)
+mantel_result <- vegan::mantel(euk_dist_exp2, func_dist_exp2, method = "spearman", permutations = 999)
+print(mantel_result)
+
+# Exp 3
+euk_wide_exp3 <- euk_wide[12:17, ]
+
+euk_dist_exp3 <- vegan::vegdist(euk_wide_exp3, method = "bray")
+set.seed(123)
+mantel_result <- vegan::mantel(euk_dist_exp3, func_dist_exp3, method = "spearman", permutations = 999)
+print(mantel_result)
+
+# Epx 4
+euk_wide_exp4 <- euk_wide[6:11, ]
+
+euk_dist_exp4 <- vegan::vegdist(euk_wide_exp4, method = "bray")
+set.seed(123)
+mantel_result <- vegan::mantel(euk_dist_exp4, func_dist_exp4, method = "spearman", permutations = 999)
+print(mantel_result)
+
+# no correlations between functional and structural values for eukaryotes
+```
 
 # Chemical analyses
 ```{r, warning=FALSE}
