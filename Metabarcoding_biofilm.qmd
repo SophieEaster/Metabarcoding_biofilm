@@ -80,7 +80,6 @@ R version used for this script: 4.3.2, use the following code chunk to download 
 ```{r, message=FALSE, warning=FALSE}
 # Restore the environment:
 # renv::restore()
-# renv::snapshot()
 
 source("code/00_setup.R")
 ```
