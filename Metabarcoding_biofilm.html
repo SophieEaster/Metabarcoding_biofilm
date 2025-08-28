@@ -2724,9 +2724,8 @@ GERMANY</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Restore the environment:</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># renv::restore()</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co"># renv::snapshot()</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&quot;code/00_setup.R&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&quot;code/00_setup.R&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="functional-endpoints" class="level1" data-number="4">
@@ -4573,24 +4572,20 @@ $wcmd
 <span id="cb75-33"><a href="#cb75-33" aria-hidden="true" tabindex="-1"></a>prok_wide_exp1 <span class="ot">&lt;-</span> prok_wide[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, ]</span>
 <span id="cb75-34"><a href="#cb75-34" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb75-35"><a href="#cb75-35" aria-hidden="true" tabindex="-1"></a><span class="co"># Distance matrices</span></span>
-<span id="cb75-36"><a href="#cb75-36" aria-hidden="true" tabindex="-1"></a>func_dist_exp1 <span class="ot">&lt;-</span> <span class="fu">dist</span>(func_dist_exp1, <span class="at">method =</span> <span class="st">&quot;euclidean&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in dist(func_dist_exp1, method = &quot;euclidean&quot;): NAs durch Umwandlung
-erzeugt</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb77"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a>prok_dist_exp1 <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">vegdist</span>(prok_wide_exp1, <span class="at">method =</span> <span class="st">&quot;bray&quot;</span>)</span>
-<span id="cb77-2"><a href="#cb77-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb77-3"><a href="#cb77-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Mantel test</span></span>
-<span id="cb77-4"><a href="#cb77-4" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb77-5"><a href="#cb77-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb77-6"><a href="#cb77-6" aria-hidden="true" tabindex="-1"></a>mantel_result <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">mantel</span>(prok_dist_exp1, func_dist_exp1, <span class="at">method =</span> <span class="st">&quot;spearman&quot;</span>, <span class="at">permutations =</span> <span class="dv">999</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb75-36"><a href="#cb75-36" aria-hidden="true" tabindex="-1"></a>func_dist_exp1 <span class="ot">&lt;-</span> <span class="fu">dist</span>(func_dist_exp1, <span class="at">method =</span> <span class="st">&quot;euclidean&quot;</span>)</span>
+<span id="cb75-37"><a href="#cb75-37" aria-hidden="true" tabindex="-1"></a>prok_dist_exp1 <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">vegdist</span>(prok_wide_exp1, <span class="at">method =</span> <span class="st">&quot;bray&quot;</span>)</span>
+<span id="cb75-38"><a href="#cb75-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb75-39"><a href="#cb75-39" aria-hidden="true" tabindex="-1"></a><span class="co"># Mantel test</span></span>
+<span id="cb75-40"><a href="#cb75-40" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb75-41"><a href="#cb75-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb75-42"><a href="#cb75-42" aria-hidden="true" tabindex="-1"></a>mantel_result <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">mantel</span>(prok_dist_exp1, func_dist_exp1, <span class="at">method =</span> <span class="st">&quot;spearman&quot;</span>, <span class="at">permutations =</span> <span class="dv">999</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>&#39;nperm&#39; &gt;= set of all permutations: complete enumeration.</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Set of permutations &lt; &#39;minperm&#39;. Generating entire set.</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb80"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb80-1"><a href="#cb80-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(mantel_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb78"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb78-1"><a href="#cb78-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(mantel_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 Mantel statistic based on Spearman&#39;s rank correlation rho 
@@ -4607,21 +4602,21 @@ Upper quantiles of permutations (null model):
 Permutation: free
 Number of permutations: 119</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb82"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb82-1"><a href="#cb82-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Epx 2</span></span>
-<span id="cb82-2"><a href="#cb82-2" aria-hidden="true" tabindex="-1"></a>func_dist_exp2 <span class="ot">&lt;-</span> func_2 <span class="sc">%&gt;%</span></span>
-<span id="cb82-3"><a href="#cb82-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice</span>(<span class="dv">6</span><span class="sc">:</span><span class="dv">10</span>)</span>
-<span id="cb82-4"><a href="#cb82-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb82-5"><a href="#cb82-5" aria-hidden="true" tabindex="-1"></a>prok_wide_exp2 <span class="ot">&lt;-</span> prok_wide[<span class="dv">18</span><span class="sc">:</span><span class="dv">22</span>, ]</span>
-<span id="cb82-6"><a href="#cb82-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb82-7"><a href="#cb82-7" aria-hidden="true" tabindex="-1"></a>func_dist_exp2 <span class="ot">&lt;-</span> <span class="fu">dist</span>(func_dist_exp2, <span class="at">method =</span> <span class="st">&quot;euclidean&quot;</span>)</span>
-<span id="cb82-8"><a href="#cb82-8" aria-hidden="true" tabindex="-1"></a>prok_dist_exp2 <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">vegdist</span>(prok_wide_exp2, <span class="at">method =</span> <span class="st">&quot;bray&quot;</span>)</span>
-<span id="cb82-9"><a href="#cb82-9" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb82-10"><a href="#cb82-10" aria-hidden="true" tabindex="-1"></a>mantel_result <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">mantel</span>(prok_dist_exp2, func_dist_exp2, <span class="at">method =</span> <span class="st">&quot;spearman&quot;</span>, <span class="at">permutations =</span> <span class="dv">999</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb80"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb80-1"><a href="#cb80-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Epx 2</span></span>
+<span id="cb80-2"><a href="#cb80-2" aria-hidden="true" tabindex="-1"></a>func_dist_exp2 <span class="ot">&lt;-</span> func_2 <span class="sc">%&gt;%</span></span>
+<span id="cb80-3"><a href="#cb80-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice</span>(<span class="dv">6</span><span class="sc">:</span><span class="dv">10</span>)</span>
+<span id="cb80-4"><a href="#cb80-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb80-5"><a href="#cb80-5" aria-hidden="true" tabindex="-1"></a>prok_wide_exp2 <span class="ot">&lt;-</span> prok_wide[<span class="dv">18</span><span class="sc">:</span><span class="dv">22</span>, ]</span>
+<span id="cb80-6"><a href="#cb80-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb80-7"><a href="#cb80-7" aria-hidden="true" tabindex="-1"></a>func_dist_exp2 <span class="ot">&lt;-</span> <span class="fu">dist</span>(func_dist_exp2, <span class="at">method =</span> <span class="st">&quot;euclidean&quot;</span>)</span>
+<span id="cb80-8"><a href="#cb80-8" aria-hidden="true" tabindex="-1"></a>prok_dist_exp2 <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">vegdist</span>(prok_wide_exp2, <span class="at">method =</span> <span class="st">&quot;bray&quot;</span>)</span>
+<span id="cb80-9"><a href="#cb80-9" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb80-10"><a href="#cb80-10" aria-hidden="true" tabindex="-1"></a>mantel_result <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">mantel</span>(prok_dist_exp2, func_dist_exp2, <span class="at">method =</span> <span class="st">&quot;spearman&quot;</span>, <span class="at">permutations =</span> <span class="dv">999</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>&#39;nperm&#39; &gt;= set of all permutations: complete enumeration.
 Set of permutations &lt; &#39;minperm&#39;. Generating entire set.</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb84"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb84-1"><a href="#cb84-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(mantel_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb82"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb82-1"><a href="#cb82-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(mantel_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 Mantel statistic based on Spearman&#39;s rank correlation rho 
@@ -4638,21 +4633,21 @@ Upper quantiles of permutations (null model):
 Permutation: free
 Number of permutations: 119</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb86"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb86-1"><a href="#cb86-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Exp 3</span></span>
-<span id="cb86-2"><a href="#cb86-2" aria-hidden="true" tabindex="-1"></a>func_dist_exp3 <span class="ot">&lt;-</span> func_2 <span class="sc">%&gt;%</span></span>
-<span id="cb86-3"><a href="#cb86-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice</span>(<span class="dv">11</span><span class="sc">:</span><span class="dv">16</span>)</span>
-<span id="cb86-4"><a href="#cb86-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb86-5"><a href="#cb86-5" aria-hidden="true" tabindex="-1"></a>prok_wide_exp3 <span class="ot">&lt;-</span> prok_wide[<span class="dv">12</span><span class="sc">:</span><span class="dv">17</span>, ]</span>
-<span id="cb86-6"><a href="#cb86-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb86-7"><a href="#cb86-7" aria-hidden="true" tabindex="-1"></a>func_dist_exp3 <span class="ot">&lt;-</span> <span class="fu">dist</span>(func_dist_exp3, <span class="at">method =</span> <span class="st">&quot;euclidean&quot;</span>)</span>
-<span id="cb86-8"><a href="#cb86-8" aria-hidden="true" tabindex="-1"></a>prok_dist_exp3 <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">vegdist</span>(prok_wide_exp3, <span class="at">method =</span> <span class="st">&quot;bray&quot;</span>)</span>
-<span id="cb86-9"><a href="#cb86-9" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb86-10"><a href="#cb86-10" aria-hidden="true" tabindex="-1"></a>mantel_result <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">mantel</span>(prok_dist_exp3, func_dist_exp3, <span class="at">method =</span> <span class="st">&quot;spearman&quot;</span>, <span class="at">permutations =</span> <span class="dv">999</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb84"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb84-1"><a href="#cb84-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Exp 3</span></span>
+<span id="cb84-2"><a href="#cb84-2" aria-hidden="true" tabindex="-1"></a>func_dist_exp3 <span class="ot">&lt;-</span> func_2 <span class="sc">%&gt;%</span></span>
+<span id="cb84-3"><a href="#cb84-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice</span>(<span class="dv">11</span><span class="sc">:</span><span class="dv">16</span>)</span>
+<span id="cb84-4"><a href="#cb84-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-5"><a href="#cb84-5" aria-hidden="true" tabindex="-1"></a>prok_wide_exp3 <span class="ot">&lt;-</span> prok_wide[<span class="dv">12</span><span class="sc">:</span><span class="dv">17</span>, ]</span>
+<span id="cb84-6"><a href="#cb84-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-7"><a href="#cb84-7" aria-hidden="true" tabindex="-1"></a>func_dist_exp3 <span class="ot">&lt;-</span> <span class="fu">dist</span>(func_dist_exp3, <span class="at">method =</span> <span class="st">&quot;euclidean&quot;</span>)</span>
+<span id="cb84-8"><a href="#cb84-8" aria-hidden="true" tabindex="-1"></a>prok_dist_exp3 <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">vegdist</span>(prok_wide_exp3, <span class="at">method =</span> <span class="st">&quot;bray&quot;</span>)</span>
+<span id="cb84-9"><a href="#cb84-9" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb84-10"><a href="#cb84-10" aria-hidden="true" tabindex="-1"></a>mantel_result <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">mantel</span>(prok_dist_exp3, func_dist_exp3, <span class="at">method =</span> <span class="st">&quot;spearman&quot;</span>, <span class="at">permutations =</span> <span class="dv">999</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>&#39;nperm&#39; &gt;= set of all permutations: complete enumeration.
 Set of permutations &lt; &#39;minperm&#39;. Generating entire set.</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb88"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb88-1"><a href="#cb88-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(mantel_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb86"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb86-1"><a href="#cb86-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(mantel_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 Mantel statistic based on Spearman&#39;s rank correlation rho 
@@ -4669,21 +4664,21 @@ Upper quantiles of permutations (null model):
 Permutation: free
 Number of permutations: 719</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb90"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb90-1"><a href="#cb90-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Epx 4</span></span>
-<span id="cb90-2"><a href="#cb90-2" aria-hidden="true" tabindex="-1"></a>func_dist_exp4 <span class="ot">&lt;-</span> func_2 <span class="sc">%&gt;%</span></span>
-<span id="cb90-3"><a href="#cb90-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice</span>(<span class="dv">17</span><span class="sc">:</span><span class="dv">22</span>)</span>
-<span id="cb90-4"><a href="#cb90-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb90-5"><a href="#cb90-5" aria-hidden="true" tabindex="-1"></a>prok_wide_exp4 <span class="ot">&lt;-</span> prok_wide[<span class="dv">6</span><span class="sc">:</span><span class="dv">11</span>, ]</span>
-<span id="cb90-6"><a href="#cb90-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb90-7"><a href="#cb90-7" aria-hidden="true" tabindex="-1"></a>func_dist_exp4 <span class="ot">&lt;-</span> <span class="fu">dist</span>(func_dist_exp4, <span class="at">method =</span> <span class="st">&quot;euclidean&quot;</span>)</span>
-<span id="cb90-8"><a href="#cb90-8" aria-hidden="true" tabindex="-1"></a>prok_dist_exp4 <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">vegdist</span>(prok_wide_exp4, <span class="at">method =</span> <span class="st">&quot;bray&quot;</span>)</span>
-<span id="cb90-9"><a href="#cb90-9" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb90-10"><a href="#cb90-10" aria-hidden="true" tabindex="-1"></a>mantel_result <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">mantel</span>(prok_dist_exp4, func_dist_exp4, <span class="at">method =</span> <span class="st">&quot;spearman&quot;</span>, <span class="at">permutations =</span> <span class="dv">999</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb88"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb88-1"><a href="#cb88-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Epx 4</span></span>
+<span id="cb88-2"><a href="#cb88-2" aria-hidden="true" tabindex="-1"></a>func_dist_exp4 <span class="ot">&lt;-</span> func_2 <span class="sc">%&gt;%</span></span>
+<span id="cb88-3"><a href="#cb88-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice</span>(<span class="dv">17</span><span class="sc">:</span><span class="dv">22</span>)</span>
+<span id="cb88-4"><a href="#cb88-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb88-5"><a href="#cb88-5" aria-hidden="true" tabindex="-1"></a>prok_wide_exp4 <span class="ot">&lt;-</span> prok_wide[<span class="dv">6</span><span class="sc">:</span><span class="dv">11</span>, ]</span>
+<span id="cb88-6"><a href="#cb88-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb88-7"><a href="#cb88-7" aria-hidden="true" tabindex="-1"></a>func_dist_exp4 <span class="ot">&lt;-</span> <span class="fu">dist</span>(func_dist_exp4, <span class="at">method =</span> <span class="st">&quot;euclidean&quot;</span>)</span>
+<span id="cb88-8"><a href="#cb88-8" aria-hidden="true" tabindex="-1"></a>prok_dist_exp4 <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">vegdist</span>(prok_wide_exp4, <span class="at">method =</span> <span class="st">&quot;bray&quot;</span>)</span>
+<span id="cb88-9"><a href="#cb88-9" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb88-10"><a href="#cb88-10" aria-hidden="true" tabindex="-1"></a>mantel_result <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">mantel</span>(prok_dist_exp4, func_dist_exp4, <span class="at">method =</span> <span class="st">&quot;spearman&quot;</span>, <span class="at">permutations =</span> <span class="dv">999</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>&#39;nperm&#39; &gt;= set of all permutations: complete enumeration.
 Set of permutations &lt; &#39;minperm&#39;. Generating entire set.</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb92"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(mantel_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb90"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb90-1"><a href="#cb90-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(mantel_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 Mantel statistic based on Spearman&#39;s rank correlation rho 
@@ -4700,45 +4695,45 @@ Upper quantiles of permutations (null model):
 Permutation: free
 Number of permutations: 719</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb94"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb94-1"><a href="#cb94-1" aria-hidden="true" tabindex="-1"></a><span class="co"># no correlations between functional and structural values for prokaryotes</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb92"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a><span class="co"># no correlations between functional and structural values for prokaryotes</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="eukaryotes-1" class="level2" data-number="7.2">
 <h2 data-number="7.2" class="anchored" data-anchor-id="eukaryotes-1"><span class="header-section-number">7.2</span> Eukaryotes</h2>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb95"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb95-1"><a href="#cb95-1" aria-hidden="true" tabindex="-1"></a><span class="co"># invert prok ASV table</span></span>
-<span id="cb95-2"><a href="#cb95-2" aria-hidden="true" tabindex="-1"></a>eukaryotes_long <span class="ot">&lt;-</span> eukaryotes_long <span class="sc">%&gt;%</span></span>
-<span id="cb95-3"><a href="#cb95-3" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(kingdom, genus, domain, class, order, family, species,    exp, media, phylum, reads, chemical, day, concentration_ug_L))</span>
-<span id="cb95-4"><a href="#cb95-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb95-5"><a href="#cb95-5" aria-hidden="true" tabindex="-1"></a>euk_wide <span class="ot">&lt;-</span> eukaryotes_long <span class="sc">%&gt;%</span></span>
-<span id="cb95-6"><a href="#cb95-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_wider</span>(</span>
-<span id="cb95-7"><a href="#cb95-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_cols =</span> sample,         </span>
-<span id="cb95-8"><a href="#cb95-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">names_from =</span> asv,        </span>
-<span id="cb95-9"><a href="#cb95-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">values_from =</span> RA,         </span>
-<span id="cb95-10"><a href="#cb95-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">values_fill =</span> <span class="dv">0</span>            </span>
-<span id="cb95-11"><a href="#cb95-11" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb95-12"><a href="#cb95-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb95-13"><a href="#cb95-13" aria-hidden="true" tabindex="-1"></a>euk_wide <span class="ot">&lt;-</span> euk_wide <span class="sc">%&gt;%</span></span>
-<span id="cb95-14"><a href="#cb95-14" aria-hidden="true" tabindex="-1"></a>  tibble<span class="sc">::</span><span class="fu">column_to_rownames</span>(<span class="st">&quot;sample&quot;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb95-15"><a href="#cb95-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.matrix</span>()</span>
-<span id="cb95-16"><a href="#cb95-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb95-17"><a href="#cb95-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Experiment 1</span></span>
-<span id="cb95-18"><a href="#cb95-18" aria-hidden="true" tabindex="-1"></a>euk_wide_exp1 <span class="ot">&lt;-</span> euk_wide[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, ]</span>
-<span id="cb95-19"><a href="#cb95-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb95-20"><a href="#cb95-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Distance matrices</span></span>
-<span id="cb95-21"><a href="#cb95-21" aria-hidden="true" tabindex="-1"></a>euk_dist_exp1 <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">vegdist</span>(euk_wide_exp1, <span class="at">method =</span> <span class="st">&quot;bray&quot;</span>)</span>
-<span id="cb95-22"><a href="#cb95-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb95-23"><a href="#cb95-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Mantel test</span></span>
-<span id="cb95-24"><a href="#cb95-24" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb95-25"><a href="#cb95-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb95-26"><a href="#cb95-26" aria-hidden="true" tabindex="-1"></a>mantel_result <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">mantel</span>(euk_dist_exp1, func_dist_exp1, <span class="at">method =</span> <span class="st">&quot;spearman&quot;</span>, <span class="at">permutations =</span> <span class="dv">999</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb93"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb93-1"><a href="#cb93-1" aria-hidden="true" tabindex="-1"></a><span class="co"># invert prok ASV table</span></span>
+<span id="cb93-2"><a href="#cb93-2" aria-hidden="true" tabindex="-1"></a>eukaryotes_long <span class="ot">&lt;-</span> eukaryotes_long <span class="sc">%&gt;%</span></span>
+<span id="cb93-3"><a href="#cb93-3" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(kingdom, genus, domain, class, order, family, species,    exp, media, phylum, reads, chemical, day, concentration_ug_L))</span>
+<span id="cb93-4"><a href="#cb93-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb93-5"><a href="#cb93-5" aria-hidden="true" tabindex="-1"></a>euk_wide <span class="ot">&lt;-</span> eukaryotes_long <span class="sc">%&gt;%</span></span>
+<span id="cb93-6"><a href="#cb93-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_wider</span>(</span>
+<span id="cb93-7"><a href="#cb93-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">id_cols =</span> sample,         </span>
+<span id="cb93-8"><a href="#cb93-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">names_from =</span> asv,        </span>
+<span id="cb93-9"><a href="#cb93-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">values_from =</span> RA,         </span>
+<span id="cb93-10"><a href="#cb93-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">values_fill =</span> <span class="dv">0</span>            </span>
+<span id="cb93-11"><a href="#cb93-11" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb93-12"><a href="#cb93-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb93-13"><a href="#cb93-13" aria-hidden="true" tabindex="-1"></a>euk_wide <span class="ot">&lt;-</span> euk_wide <span class="sc">%&gt;%</span></span>
+<span id="cb93-14"><a href="#cb93-14" aria-hidden="true" tabindex="-1"></a>  tibble<span class="sc">::</span><span class="fu">column_to_rownames</span>(<span class="st">&quot;sample&quot;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb93-15"><a href="#cb93-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.matrix</span>()</span>
+<span id="cb93-16"><a href="#cb93-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb93-17"><a href="#cb93-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Experiment 1</span></span>
+<span id="cb93-18"><a href="#cb93-18" aria-hidden="true" tabindex="-1"></a>euk_wide_exp1 <span class="ot">&lt;-</span> euk_wide[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, ]</span>
+<span id="cb93-19"><a href="#cb93-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb93-20"><a href="#cb93-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Distance matrices</span></span>
+<span id="cb93-21"><a href="#cb93-21" aria-hidden="true" tabindex="-1"></a>euk_dist_exp1 <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">vegdist</span>(euk_wide_exp1, <span class="at">method =</span> <span class="st">&quot;bray&quot;</span>)</span>
+<span id="cb93-22"><a href="#cb93-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb93-23"><a href="#cb93-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Mantel test</span></span>
+<span id="cb93-24"><a href="#cb93-24" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb93-25"><a href="#cb93-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb93-26"><a href="#cb93-26" aria-hidden="true" tabindex="-1"></a>mantel_result <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">mantel</span>(euk_dist_exp1, func_dist_exp1, <span class="at">method =</span> <span class="st">&quot;spearman&quot;</span>, <span class="at">permutations =</span> <span class="dv">999</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>&#39;nperm&#39; &gt;= set of all permutations: complete enumeration.</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Set of permutations &lt; &#39;minperm&#39;. Generating entire set.</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb98"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb98-1"><a href="#cb98-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(mantel_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb96"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb96-1"><a href="#cb96-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(mantel_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 Mantel statistic based on Spearman&#39;s rank correlation rho 
@@ -4755,17 +4750,17 @@ Upper quantiles of permutations (null model):
 Permutation: free
 Number of permutations: 119</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb100"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb100-1"><a href="#cb100-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Epx 2</span></span>
-<span id="cb100-2"><a href="#cb100-2" aria-hidden="true" tabindex="-1"></a>euk_wide_exp2 <span class="ot">&lt;-</span> euk_wide[<span class="dv">18</span><span class="sc">:</span><span class="dv">22</span>, ]</span>
-<span id="cb100-3"><a href="#cb100-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb100-4"><a href="#cb100-4" aria-hidden="true" tabindex="-1"></a>euk_dist_exp2 <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">vegdist</span>(euk_wide_exp2, <span class="at">method =</span> <span class="st">&quot;bray&quot;</span>)</span>
-<span id="cb100-5"><a href="#cb100-5" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb100-6"><a href="#cb100-6" aria-hidden="true" tabindex="-1"></a>mantel_result <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">mantel</span>(euk_dist_exp2, func_dist_exp2, <span class="at">method =</span> <span class="st">&quot;spearman&quot;</span>, <span class="at">permutations =</span> <span class="dv">999</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb98"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb98-1"><a href="#cb98-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Epx 2</span></span>
+<span id="cb98-2"><a href="#cb98-2" aria-hidden="true" tabindex="-1"></a>euk_wide_exp2 <span class="ot">&lt;-</span> euk_wide[<span class="dv">18</span><span class="sc">:</span><span class="dv">22</span>, ]</span>
+<span id="cb98-3"><a href="#cb98-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb98-4"><a href="#cb98-4" aria-hidden="true" tabindex="-1"></a>euk_dist_exp2 <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">vegdist</span>(euk_wide_exp2, <span class="at">method =</span> <span class="st">&quot;bray&quot;</span>)</span>
+<span id="cb98-5"><a href="#cb98-5" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb98-6"><a href="#cb98-6" aria-hidden="true" tabindex="-1"></a>mantel_result <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">mantel</span>(euk_dist_exp2, func_dist_exp2, <span class="at">method =</span> <span class="st">&quot;spearman&quot;</span>, <span class="at">permutations =</span> <span class="dv">999</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>&#39;nperm&#39; &gt;= set of all permutations: complete enumeration.
 Set of permutations &lt; &#39;minperm&#39;. Generating entire set.</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb102"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb102-1"><a href="#cb102-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(mantel_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb100"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb100-1"><a href="#cb100-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(mantel_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 Mantel statistic based on Spearman&#39;s rank correlation rho 
@@ -4782,17 +4777,17 @@ Upper quantiles of permutations (null model):
 Permutation: free
 Number of permutations: 119</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb104"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb104-1"><a href="#cb104-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Exp 3</span></span>
-<span id="cb104-2"><a href="#cb104-2" aria-hidden="true" tabindex="-1"></a>euk_wide_exp3 <span class="ot">&lt;-</span> euk_wide[<span class="dv">12</span><span class="sc">:</span><span class="dv">17</span>, ]</span>
-<span id="cb104-3"><a href="#cb104-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb104-4"><a href="#cb104-4" aria-hidden="true" tabindex="-1"></a>euk_dist_exp3 <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">vegdist</span>(euk_wide_exp3, <span class="at">method =</span> <span class="st">&quot;bray&quot;</span>)</span>
-<span id="cb104-5"><a href="#cb104-5" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb104-6"><a href="#cb104-6" aria-hidden="true" tabindex="-1"></a>mantel_result <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">mantel</span>(euk_dist_exp3, func_dist_exp3, <span class="at">method =</span> <span class="st">&quot;spearman&quot;</span>, <span class="at">permutations =</span> <span class="dv">999</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb102"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb102-1"><a href="#cb102-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Exp 3</span></span>
+<span id="cb102-2"><a href="#cb102-2" aria-hidden="true" tabindex="-1"></a>euk_wide_exp3 <span class="ot">&lt;-</span> euk_wide[<span class="dv">12</span><span class="sc">:</span><span class="dv">17</span>, ]</span>
+<span id="cb102-3"><a href="#cb102-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb102-4"><a href="#cb102-4" aria-hidden="true" tabindex="-1"></a>euk_dist_exp3 <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">vegdist</span>(euk_wide_exp3, <span class="at">method =</span> <span class="st">&quot;bray&quot;</span>)</span>
+<span id="cb102-5"><a href="#cb102-5" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb102-6"><a href="#cb102-6" aria-hidden="true" tabindex="-1"></a>mantel_result <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">mantel</span>(euk_dist_exp3, func_dist_exp3, <span class="at">method =</span> <span class="st">&quot;spearman&quot;</span>, <span class="at">permutations =</span> <span class="dv">999</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>&#39;nperm&#39; &gt;= set of all permutations: complete enumeration.
 Set of permutations &lt; &#39;minperm&#39;. Generating entire set.</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb106"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb106-1"><a href="#cb106-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(mantel_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb104"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb104-1"><a href="#cb104-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(mantel_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 Mantel statistic based on Spearman&#39;s rank correlation rho 
@@ -4809,17 +4804,17 @@ Upper quantiles of permutations (null model):
 Permutation: free
 Number of permutations: 719</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb108"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb108-1"><a href="#cb108-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Epx 4</span></span>
-<span id="cb108-2"><a href="#cb108-2" aria-hidden="true" tabindex="-1"></a>euk_wide_exp4 <span class="ot">&lt;-</span> euk_wide[<span class="dv">6</span><span class="sc">:</span><span class="dv">11</span>, ]</span>
-<span id="cb108-3"><a href="#cb108-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb108-4"><a href="#cb108-4" aria-hidden="true" tabindex="-1"></a>euk_dist_exp4 <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">vegdist</span>(euk_wide_exp4, <span class="at">method =</span> <span class="st">&quot;bray&quot;</span>)</span>
-<span id="cb108-5"><a href="#cb108-5" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb108-6"><a href="#cb108-6" aria-hidden="true" tabindex="-1"></a>mantel_result <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">mantel</span>(euk_dist_exp4, func_dist_exp4, <span class="at">method =</span> <span class="st">&quot;spearman&quot;</span>, <span class="at">permutations =</span> <span class="dv">999</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb106"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb106-1"><a href="#cb106-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Epx 4</span></span>
+<span id="cb106-2"><a href="#cb106-2" aria-hidden="true" tabindex="-1"></a>euk_wide_exp4 <span class="ot">&lt;-</span> euk_wide[<span class="dv">6</span><span class="sc">:</span><span class="dv">11</span>, ]</span>
+<span id="cb106-3"><a href="#cb106-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb106-4"><a href="#cb106-4" aria-hidden="true" tabindex="-1"></a>euk_dist_exp4 <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">vegdist</span>(euk_wide_exp4, <span class="at">method =</span> <span class="st">&quot;bray&quot;</span>)</span>
+<span id="cb106-5"><a href="#cb106-5" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb106-6"><a href="#cb106-6" aria-hidden="true" tabindex="-1"></a>mantel_result <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">mantel</span>(euk_dist_exp4, func_dist_exp4, <span class="at">method =</span> <span class="st">&quot;spearman&quot;</span>, <span class="at">permutations =</span> <span class="dv">999</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>&#39;nperm&#39; &gt;= set of all permutations: complete enumeration.
 Set of permutations &lt; &#39;minperm&#39;. Generating entire set.</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb110"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb110-1"><a href="#cb110-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(mantel_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb108"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb108-1"><a href="#cb108-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(mantel_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 Mantel statistic based on Spearman&#39;s rank correlation rho 
@@ -4836,33 +4831,33 @@ Upper quantiles of permutations (null model):
 Permutation: free
 Number of permutations: 719</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb112"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb112-1"><a href="#cb112-1" aria-hidden="true" tabindex="-1"></a><span class="co"># no correlations between functional and structural values for eukaryotes</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb110"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb110-1"><a href="#cb110-1" aria-hidden="true" tabindex="-1"></a><span class="co"># no correlations between functional and structural values for eukaryotes</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 </section>
 <section id="chemical-analyses" class="level1" data-number="8">
 <h1 data-number="8"><span class="header-section-number">8</span> Chemical analyses</h1>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb113"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb113-1"><a href="#cb113-1" aria-hidden="true" tabindex="-1"></a>chemical_analyses <span class="ot">&lt;-</span></span>
-<span id="cb113-2"><a href="#cb113-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read.table</span>(<span class="st">&quot;data/chemical_analyses.txt&quot;</span>,</span>
-<span id="cb113-3"><a href="#cb113-3" aria-hidden="true" tabindex="-1"></a>             <span class="at">header =</span> <span class="cn">TRUE</span>, <span class="at">sep =</span> <span class="st">&quot;</span><span class="sc">\t</span><span class="st">&quot;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb113-4"><a href="#cb113-4" aria-hidden="true" tabindex="-1"></a>  tibble<span class="sc">::</span><span class="fu">tibble</span>()</span>
-<span id="cb113-5"><a href="#cb113-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb113-6"><a href="#cb113-6" aria-hidden="true" tabindex="-1"></a><span class="co"># One contamination in exp 1 negative control, 3 days later measured concentration again &lt;LOQ. </span></span>
-<span id="cb113-7"><a href="#cb113-7" aria-hidden="true" tabindex="-1"></a>chemical_analyses <span class="ot">&lt;-</span> chemical_analyses <span class="sc">%&gt;%</span>   </span>
-<span id="cb113-8"><a href="#cb113-8" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(treatment <span class="sc">!=</span> <span class="st">&quot;negative_control&quot;</span>) </span>
-<span id="cb113-9"><a href="#cb113-9" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb113-10"><a href="#cb113-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb113-11"><a href="#cb113-11" aria-hidden="true" tabindex="-1"></a>chemical_analyses<span class="sc">$</span>measured_concentration_ug_L <span class="ot">&lt;-</span></span>
-<span id="cb113-12"><a href="#cb113-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.numeric</span>(chemical_analyses<span class="sc">$</span>measured_concentration_ug_L)</span>
-<span id="cb113-13"><a href="#cb113-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb113-14"><a href="#cb113-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute mean measured concentrations for the respective experiments</span></span>
-<span id="cb113-15"><a href="#cb113-15" aria-hidden="true" tabindex="-1"></a>mean_concentrations <span class="ot">&lt;-</span></span>
-<span id="cb113-16"><a href="#cb113-16" aria-hidden="true" tabindex="-1"></a>chemical_analyses <span class="sc">%&gt;%</span></span>
-<span id="cb113-17"><a href="#cb113-17" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(exp <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;1&quot;</span>, <span class="st">&quot;2&quot;</span>, <span class="st">&quot;3&quot;</span>, <span class="st">&quot;4&quot;</span>), </span>
-<span id="cb113-18"><a href="#cb113-18" aria-hidden="true" tabindex="-1"></a>                nominal_concentration_ug_L <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;10&quot;</span>, <span class="st">&quot;1000&quot;</span>, <span class="st">&quot;10000&quot;</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb113-19"><a href="#cb113-19" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_by</span>(exp, treatment, nominal_concentration_ug_L) <span class="sc">%&gt;%</span></span>
-<span id="cb113-20"><a href="#cb113-20" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">summarise</span>(<span class="at">mean =</span> <span class="fu">mean</span>(measured_concentration_ug_L, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="at">.groups =</span> <span class="st">&quot;drop&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb111"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb111-1"><a href="#cb111-1" aria-hidden="true" tabindex="-1"></a>chemical_analyses <span class="ot">&lt;-</span></span>
+<span id="cb111-2"><a href="#cb111-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read.table</span>(<span class="st">&quot;data/chemical_analyses.txt&quot;</span>,</span>
+<span id="cb111-3"><a href="#cb111-3" aria-hidden="true" tabindex="-1"></a>             <span class="at">header =</span> <span class="cn">TRUE</span>, <span class="at">sep =</span> <span class="st">&quot;</span><span class="sc">\t</span><span class="st">&quot;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb111-4"><a href="#cb111-4" aria-hidden="true" tabindex="-1"></a>  tibble<span class="sc">::</span><span class="fu">tibble</span>()</span>
+<span id="cb111-5"><a href="#cb111-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb111-6"><a href="#cb111-6" aria-hidden="true" tabindex="-1"></a><span class="co"># One contamination in exp 1 negative control, 3 days later measured concentration again &lt;LOQ. </span></span>
+<span id="cb111-7"><a href="#cb111-7" aria-hidden="true" tabindex="-1"></a>chemical_analyses <span class="ot">&lt;-</span> chemical_analyses <span class="sc">%&gt;%</span>   </span>
+<span id="cb111-8"><a href="#cb111-8" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(treatment <span class="sc">!=</span> <span class="st">&quot;negative_control&quot;</span>) </span>
+<span id="cb111-9"><a href="#cb111-9" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb111-10"><a href="#cb111-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb111-11"><a href="#cb111-11" aria-hidden="true" tabindex="-1"></a>chemical_analyses<span class="sc">$</span>measured_concentration_ug_L <span class="ot">&lt;-</span></span>
+<span id="cb111-12"><a href="#cb111-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.numeric</span>(chemical_analyses<span class="sc">$</span>measured_concentration_ug_L)</span>
+<span id="cb111-13"><a href="#cb111-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb111-14"><a href="#cb111-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute mean measured concentrations for the respective experiments</span></span>
+<span id="cb111-15"><a href="#cb111-15" aria-hidden="true" tabindex="-1"></a>mean_concentrations <span class="ot">&lt;-</span></span>
+<span id="cb111-16"><a href="#cb111-16" aria-hidden="true" tabindex="-1"></a>chemical_analyses <span class="sc">%&gt;%</span></span>
+<span id="cb111-17"><a href="#cb111-17" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(exp <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;1&quot;</span>, <span class="st">&quot;2&quot;</span>, <span class="st">&quot;3&quot;</span>, <span class="st">&quot;4&quot;</span>), </span>
+<span id="cb111-18"><a href="#cb111-18" aria-hidden="true" tabindex="-1"></a>                nominal_concentration_ug_L <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;10&quot;</span>, <span class="st">&quot;1000&quot;</span>, <span class="st">&quot;10000&quot;</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb111-19"><a href="#cb111-19" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_by</span>(exp, treatment, nominal_concentration_ug_L) <span class="sc">%&gt;%</span></span>
+<span id="cb111-20"><a href="#cb111-20" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">summarise</span>(<span class="at">mean =</span> <span class="fu">mean</span>(measured_concentration_ug_L, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="at">.groups =</span> <span class="st">&quot;drop&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 
