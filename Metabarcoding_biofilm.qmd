@@ -38,7 +38,7 @@ Four independent chronic (14 days) exposure experiments were conducted in an ind
     
     -   Kuhl (high nutrient media)
     
-As functional endpoints the two biomass parameters ash free dry weight (AFDW) and the photosynthetic pigments (chlorophyll a, b & c) were measured. As structural endpoints DNA metabarcoding was conducted to investigate the prokaryotic and eukaryotic communities. 
+As functional endpoints the two parameters ash free dry weight (AFDW) and the photosynthetic pigments (chlorophyll a, b & c) were measured. As structural endpoints DNA metabarcoding was conducted to investigate the prokaryotic and eukaryotic communities. 
 
 # R version 4.3.2
 R version used for this script: 4.3.2, use the following code chunk to download the correct version.
@@ -1380,6 +1380,7 @@ ggsave(
 )
 
 ```
+
 
 ## Diversity indices 
 ```{r, warning=FALSE, message=FALSE}
