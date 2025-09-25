@@ -4,6 +4,7 @@ format:
   html:
     self-contained: true
     toc: true
+    toc-depth: 2
     number-sections: true
     style: "floating"
 editor_options: 
@@ -34,7 +35,7 @@ Four independent chronic (14 days) exposure experiments were conducted in an ind
 
 -   media/nutrients
 
-    -   SAM S5 (low nutrient media)
+    -   SAM 5S (low nutrient media)
     
     -   Kuhl (high nutrient media)
     
@@ -79,7 +80,7 @@ R version used for this script: 4.3.2, use the following code chunk to download 
 # Packages in a reproducible environment
 ```{r, message=FALSE, warning=FALSE}
 # Restore the environment:
-# renv::restore()
+renv::restore()
 
 source("code/00_setup.R")
 ```
